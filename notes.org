@@ -1,0 +1,23 @@
+#+STARTUP showeverything
+
+* Functions I want in my custom config
+  - (move-to-window-line-top-bottom)
+    - Put point in left column and center of screen without changing text
+  - (beginning-of-buffer)
+  - (end-of-buffer)
+  - (goto-line)
+  - (setq line-move-visual nil)
+    - Move by logical lines when a line is wrapped off end of buffer
+  - (find-file)
+  - (open-line)
+    - Insert a blank line after the cursor
+  - (delete-blank-lines)
+    - Delete all but one of many consecutive blank lines
+  - (newline)
+  - (repeat), ~c-x z~
+    - Repeat previous command
+    - keep hittig ~z~ to keep repeating
+  - (scroll-other-window)
+  - (completion-cycle-threshold)
+    - Minibuffer completion cycles always (t), or if possible completions are < n (n)
+
