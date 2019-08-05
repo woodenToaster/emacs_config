@@ -8,8 +8,8 @@
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
 (set-face-attribute 'default t :font "Liberation Mono-11.5")
 
-(global-hl-line-mode 1)
-(set-face-background 'hl-line "gray35")
+;;(global-hl-line-mode 1)
+;;(set-face-background 'hl-line "gray35")
 
 (set-face-attribute 'font-lock-builtin-face nil :foreground "#DAB98F")
 (set-face-attribute 'font-lock-comment-face nil :foreground "gray50")

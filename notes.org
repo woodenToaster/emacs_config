@@ -1,4 +1,13 @@
-#+STARTUP showeverything
+#+STARTUP: showeverything
+
+* Basic Features
+** TODO Modal editing
+   - Normal
+   - Insert
+   - Visual
+** TODO Vim keybindings
+   - Motions
+   - SPC leader key
 
 * Functions I want in my custom config
   - (move-to-window-line-top-bottom)
@@ -20,4 +29,13 @@
   - (scroll-other-window)
   - (completion-cycle-threshold)
     - Minibuffer completion cycles always (t), or if possible completions are < n (n)
+  - (repeat-complex-command)
+    - Re-execute a recent minibuffer command from the ~command-history~
 
+* Useful emacs commands
+  - ~c-h w~ /key/
+    - where is /key/ bound to ~(where-is)~
+  - ~c-h i d m emacs <RET> (i|s) /topic/ <RET>~
+    - Search indices (i) or text (s) of emacs info manual for /topic/
+    - ~,~ to see subsequent matches
+  - 
