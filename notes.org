@@ -31,6 +31,43 @@
     - Minibuffer completion cycles always (t), or if possible completions are < n (n)
   - (repeat-complex-command)
     - Re-execute a recent minibuffer command from the ~command-history~
+  - (kill-whole-line)
+  - (kill-ring-save)
+  - (zap-to-char)
+    - Like ~df<char>~
+  - (point-to-register r)
+    - Save =point= in register /r/
+  - (jump-to-register r)
+  - (copy-to-register r)
+    - Save region in register /r/
+  - (insert-register r)
+    - Paste text from register /r/
+  - (scroll-preserve-screen-position)
+    - Keeps point in same place when scrolling
+  - (fast-but-imprecise-scrolling)
+    - If scrolling isn't performant
+  - (recenter-top-bottom)
+    - ~c-l~
+  - (recenter)
+    - Current line becomes center of screen
+  - ~scroll-margin~h
+    - Controls when point will start scrolling
+  - (global-font-lock-mode 1)
+  - (hi-lock-mode)
+    - Highlight search results, etc.
+  - Set fringes to show line numbers
+  - (show-trailing-whitespace t)
+  - Toggling =whitespace-mode=
+  - (set-selective-display)
+    - Hide lines of a certain indent level (code folding)
+  - (display-time)
+    - In mode line
+  - (cursor-type)
+    - ~box~
+    - ~bar~
+    - ~hollow~
+  - (global-hl-line-mode 1)
+  - =display-line-numbers=
 
 * Useful emacs commands
   - ~c-h w~ /key/
@@ -38,4 +75,19 @@
   - ~c-h i d m emacs <RET> (i|s) /topic/ <RET>~
     - Search indices (i) or text (s) of emacs info manual for /topic/
     - ~,~ to see subsequent matches
-  - 
+  - =view-register= /r/
+    - See contents of register /r/
+  - (view-mode)
+    - Kind of like =less=
+    - ~SPC~ to scroll forward
+    - ~DEL~ to scroll back
+    - ~q~ to quit
+  - (list-colors-display)
+    - Show all predefined colors
+  - (set-face-foreground)
+  - (set-face-background)
+  - Section 14.10 in manual
+    - Standard faces
+  - (font-lock-add-keywords)
+    - Make new highlighting patterns
+  - Can use incremental search in the minibuffer

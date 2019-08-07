@@ -5,6 +5,10 @@
 ;; You may delete these explanatory comments.
 (package-initialize)
 
+;; Set globally?
+(setq show-trailing-whitespace t)
+(setq tab-width 4)
+
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
 (set-face-attribute 'default t :font "Liberation Mono-11.5")
 
