@@ -7,7 +7,7 @@
    - Visual
 ** TODO Vim keybindings
    - Motions
-   - SPC leader key
+** TODO SPC leader key
 
 * Functions I want in my custom config
   - (move-to-window-line-top-bottom)
@@ -68,6 +68,11 @@
     - ~hollow~
   - (global-hl-line-mode 1)
   - =display-line-numbers=
+  - (backward-paragraph)
+  - (forward-paragraph)
+  - (set-mark-command)
+  - (isearch-ring-advance)
+  - (isearch-ring-retreat)
 
 * Useful emacs commands
   - ~c-h w~ /key/
@@ -91,3 +96,7 @@
   - (font-lock-add-keywords)
     - Make new highlighting patterns
   - Can use incremental search in the minibuffer
+  - Use registers more
+  - Isearch history
+
+
