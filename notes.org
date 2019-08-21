@@ -8,6 +8,11 @@
 ** TODO Vim keybindings
    - Motions
 ** TODO SPC leader key
+** TODO Window layouts
+
+* Visuals
+** TODO Syntax highlighting
+** TODO Mode bar
 
 * Functions I want in my custom config
   - (move-to-window-line-top-bottom)
@@ -73,6 +78,11 @@
   - (set-mark-command)
   - (isearch-ring-advance)
   - (isearch-ring-retreat)
+  - fill to lines length in comment
+  - (xref-find-definitions) M-.
+    - Requires TAGS table to be built
+  - Surround region with if block and put cursor in condition
+
 
 * Useful emacs commands
   - ~c-h w~ /key/
@@ -98,5 +108,14 @@
   - Can use incremental search in the minibuffer
   - Use registers more
   - Isearch history
+  - delete-duplicate-lines
 
+* First Packages to Look at
+  - Helm
+  - Ido
 
+#+begin_src elisp
+(ido-mode 1)
+(setq ido-everywhere t)
+(setq ido-enable-flex-matching t)
+#+end_src
