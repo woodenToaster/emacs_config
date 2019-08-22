@@ -14,7 +14,10 @@
 ** TODO Syntax highlighting
 ** TODO Mode bar
 
-* Functions I want in my custom config
+* Bugs
+** TODO Don't enable cjh mode in minibuffer, info mode, help, etc.
+
+* functions I want in my custom config
   - (move-to-window-line-top-bottom)
     - Put point in left column and center of screen without changing text
   - (beginning-of-buffer)

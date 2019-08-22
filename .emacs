@@ -21,17 +21,32 @@
 (defun cjh-insert-state ()
   (interactive)
   (setq-local cursor-type 'bar)
+  (setq overriding-local-map nil)
   (setq cjh-command-state nil))
 
 (defun cjh-normal-state ()
   (interactive)
   (setq-local cursor-type 'box)
+  (setq overriding-local-map cjh-keymap)
   (setq cjh-command-state t))
 
-(define-minor-mode cjh-mode nil nil nil cjh-keymap :global t)
+(define-minor-mode cjh-mode nil nil nil nil
+  (cjh-normal-state))
 
 (define-key cjh-keymap "i" 'cjh-insert-state)
-(global-set-key (kbd "C-c e") 'cjh-normal-state)
+(global-set-key (kbd "M-e") 'cjh-normal-state)
+
+(define-key cjh-keymap "h" 'backward-char)
+(define-key cjh-keymap "j" 'next-line)
+(define-key cjh-keymap "k" 'previous-line)
+(define-key cjh-keymap "l" 'forward-char)
+(define-key cjh-keymap ",c" 'cjh-wrap-region-in-if)
+(define-key cjh-keymap ",w" 'save-buffer)
+(define-key cjh-keymap " wl" 'other-window)
+(define-key cjh-keymap " wh" 'other-window)
+(define-key cjh-keymap " q" 'save-buffers-kill-terminal)
+(define-key cjh-keymap " r" 'cjh-reload-init-file)
+(define-key cjh-keymap " b" 'switch-to-buffer)
 
 ;;; Visuals
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
@@ -48,6 +63,9 @@
 (set-face-attribute 'font-lock-variable-name-face nil :foreground "burlywood3")
 
 ;;; Functions
+(defun cjh-reload-init-file ()
+  (interactive)
+  (load-file user-init-file))
 
 (defun cjh-wrap-region-in-if (start end)
   (interactive "r")
@@ -89,7 +107,6 @@
 (add-hook 'window-setup-hook 'post-load-stuff t)
 
 ;;; Keybindings
-(global-set-key (kbd "C-x a f") 'cjh-wrap-region-in-if)
 
 
 (custom-set-variables
