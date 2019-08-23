@@ -8,9 +8,10 @@
 ** TODO Vim keybindings
    - Motions
 ** TODO SPC leader key
-** TODO Window layouts
+** TODO Layouts
 
-* Visuals
+
+* visuals
 ** TODO Syntax highlighting
 ** TODO Mode bar
 
