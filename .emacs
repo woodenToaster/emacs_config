@@ -6,13 +6,21 @@
 
 ;;; Defaults
 ;; Highlight trailing whitespace
-(setq-default show-trailing-whitespace t)
-(setq-default tab-width 4)
+(setq show-trailing-whitespace t)
+(setq tab-width 4)
 ;; Indent with spaces
-(setq-default indent-tabs-mode nil)
+(setq indent-tabs-mode nil)
 ;; Make 'kill-line also delete the \n character
-(setq-default kill-whole-line t)
+(setq kill-whole-line t)
 (setq c-basic-offset 4)
+(setq tab-width 4)
+
+;; Prompt for compile command when calling `compile`
+(setq compilation-read-command nil)
+(setq compilation-scroll-output 'first-error)
+(setq scroll-margin 5)
+;; Don't split windows
+(set-frame-parameter nil 'unsplittable t)
 
 ;; Save layout and buffers between sessions
 (desktop-save-mode 1)
@@ -48,52 +56,80 @@
 ;; TODO(chogan): Change this to fd
 (global-set-key (kbd "M-e") 'cjh-normal-state)
 
+(define-key cjh-keymap " tn" 'linum-mode)
+(define-key cjh-keymap " tw" 'whitespace-mode)
+
 ;; Motions
 (define-key cjh-keymap "h" 'backward-char)
 (define-key cjh-keymap "j" 'next-line)
 (define-key cjh-keymap "k" 'previous-line)
 (define-key cjh-keymap "l" 'forward-char)
-(define-key cjh-keymap ",c" 'cjh-wrap-region-in-if)
-(define-key cjh-keymap ",w" 'save-buffer)
 (define-key cjh-keymap "A" 'cjh-eol-insert)
 (define-key cjh-keymap "w" 'forward-word)
-;; e
 (define-key cjh-keymap "b" 'backward-word)
 (define-key cjh-keymap "$" 'cjh-move-to-end-of-line)
 (define-key cjh-keymap "^" 'back-to-indentation)
+(define-key cjh-keymap (kbd "C-d") 'cjh-scroll-up-half)
+(define-key cjh-keymap (kbd "C-u") 'cjh-scroll-down-half)
+(define-key cjh-keymap "gg" 'beginning-of-buffer)
+(define-key cjh-keymap "G" 'end-of-buffer)
+;; e
 ;; 0
 
 ;; Editing
 (define-key cjh-keymap "dd" 'cjh-kill-line)
 ;; TODO(chogan): "dd" that doesn't kill the newline
 (define-key cjh-keymap (kbd "S-d") 'kill-line)
-;; C
 (define-key cjh-keymap "yy" 'cjh-copy-line)
 ;; TODO(chogan): Doesn't insert the newline
 (define-key cjh-keymap "p" 'yank)
 (define-key cjh-keymap " q" 'save-buffers-kill-terminal)
 (define-key cjh-keymap " r" 'cjh-reload-init-file)
-(define-key cjh-keymap " b" 'switch-to-buffer)
 (define-key cjh-keymap "x" 'cjh-forward-delete-char)
 (define-key cjh-keymap "u" 'undo)
 (define-key cjh-keymap "a" 'cjh-forward-and-insert)
-
+;; SPC [
+;; SPC ]
 ;; r
 ;; o
+;; S-o
+;; .
+;; qq
 
+;; Text Objects
 ;; d...
 ;; y...
 ;; c...
+;; ct...
+;; C
+
+;; Visual Mode
+;; v
+;; C-v
+;; V
+
+;; File Commands
+(define-key cjh-keymap " ff" 'find-file)
+(define-key cjh-keymap " fF" 'find-file-other-window)
 
 ;; Buffer commands
-;; " bb"
-;; " bd"
+(define-key cjh-keymap " bb" 'switch-to-buffer)
+(define-key cjh-keymap " bd" 'kill-buffer)
+;; SPC TAB
 
 ;; Window commands
 (define-key cjh-keymap " wl" 'other-window)
 (define-key cjh-keymap " wh" 'other-window)
 (define-key cjh-keymap " w/" 'split-window-right)
-(define-key cjh-keymap " wq" 'delete-window)
+(define-key cjh-keymap " wd" 'delete-window)
+
+;; Custom Bindings
+;; Surround region with if statement
+(define-key cjh-keymap ",si" 'cjh-wrap-region-in-if)
+(define-key cjh-keymap ",w" 'save-buffer)
+(define-key cjh-keymap ",b" 'compile)
+(define-key cjh-keymap ",r" 'recompile)
+(define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
 
 ;;; Visuals
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
@@ -129,17 +165,42 @@
   (let ((beg (line-beginning-position))
         (end (line-end-position)))
     (copy-region-as-kill beg end)))
+
 (defun cjh-forward-delete-char ()
   (interactive)
-  (backward-forward-char-untabify 1 t))
+  (forward-delete-char-untabify 1 t))
 
 (defun cjh-forward-and-insert ()
   (interactive)
   (forward-char)
   (cjh-insert-state))
+
 (defun cjh-move-to-end-of-line ()
   (interactive)
   (move-end-of-line nil))
+
+(defun cjh-window-half-height ()
+  (max 1 (/ (1- (window-height (selected-window))) 2)))
+
+(defun cjh-scroll-up-half ()
+  (interactive)
+  (scroll-up (cjh-window-half-height))
+  (move-to-window-line (cjh-window-half-height)))
+
+(defun cjh-scroll-down-half ()
+  (interactive)
+  (scroll-down (cjh-window-half-height))
+  (move-to-window-line (cjh-window-half-height)))
+
+(defun cjh-insert-if0-comment ()
+  (interactive)
+  (if cjh-insert-if0
+      (progn
+        (insert "#if 0")
+        (setq cjh-insert-if0 nil))
+    (progn
+      (insert "#endif")
+      (setq cjh-insert-if0 t))))
 
 (defun cjh-wrap-region-in-if (start end)
   (interactive "r")
@@ -178,9 +239,8 @@
 
 ;;; hooks
 (add-hook 'window-setup-hook 'post-load-stuff t)
-
-;;; Keybindings
-
+(add-hook 'minibuffer-setup-hook 'cjh-insert-state)
+(add-hook 'minibuffer-exit-hook 'cjh-normal-state)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.

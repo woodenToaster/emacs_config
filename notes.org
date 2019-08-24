@@ -17,6 +17,7 @@
 
 * Bugs
 ** TODO Don't enable cjh mode in minibuffer, info mode, help, etc.
+** TODO Pasting a whole line puts it below where I expect
 
 * functions I want in my custom config
   - (move-to-window-line-top-bottom)
