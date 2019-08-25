@@ -1,97 +1,71 @@
 #+STARTUP: showeverything
 
-* Basic Features
-** TODO Modal editing
-   - Normal
-   - Insert
-   - Visual
-** TODO Vim keybindings
-   - Motions
-** TODO SPC leader key
-** TODO Layouts
+* TODO
 
+** Features
+*** TODO Modes
+    - Visual
+    - Motion
+*** TODO Layouts
+*** TODO Syntax highlighting
+*** TODO Mode bar
+*** TODO Pretty org-mode
+*** TODO fd to escape
 
-* visuals
-** TODO Syntax highlighting
-** TODO Mode bar
+** Bugs
+*** TODO Don't enable cjh mode in info mode, help, etc.
+*** TODO Pasting a whole line puts it below where I expect
+*** TODO org-mode binds M-e (this will be fixed once fd escapes)
 
-* Bugs
-** TODO Don't enable cjh mode in minibuffer, info mode, help, etc.
-** TODO Pasting a whole line puts it below where I expect
+** Functionality
+   - (setq line-move-visual nil)
+     - Move by logical lines when a line is wrapped off end of buffer
+   - (delete-blank-lines)
+     - Delete all but one of many consecutive blank lines
+   - (repeat), ~c-x z~
+     - Repeat previous command
+     - keep hittig ~z~ to keep repeating
+   - (scroll-other-window)
+   - (completion-cycle-threshold)
+     - Minibuffer completion cycles always (t), or if possible completions are < n (n)
+   - (repeat-complex-command)
+     - Re-execute a recent minibuffer command from the ~command-history~
+   - (kill-ring-save)
+   - (zap-to-char)
+     - Like ~df<char>~
+   - (point-to-register r)
+     - Save =point= in register /r/
+   - (jump-to-register r)
+   - (copy-to-register r)
+     - Save region in register /r/
+   - (insert-register r)
+     - Paste text from register /r/
+   - (scroll-preserve-screen-position)
+     - Keeps point in same place when scrolling
+   - (fast-but-imprecise-scrolling)
+     - If scrolling isn't performant
+   - (recenter-top-bottom)
+     - ~c-l~
+   - (recenter)
+     - Current line becomes center of screen
+   - (global-font-lock-mode 1)
+   - (hi-lock-mode)
+     - Highlight search results, etc.
+   - (set-selective-display)
+     - Hide lines of a certain indent level (code folding)
+   - (display-time)
+     - In mode line
+   - (global-hl-line-mode 1)
+   - (backward-paragraph)
+   - (forward-paragraph)
+   - (set-mark-command)
+   - (isearch-ring-advance)
+   - (isearch-ring-retreat)
+   - fill to lines length in comment
+   - (xref-find-definitions) M-.
+     - Requires TAGS table to be built
 
-* functions I want in my custom config
-  - (move-to-window-line-top-bottom)
-    - Put point in left column and center of screen without changing text
-  - (beginning-of-buffer)
-  - (end-of-buffer)
-  - (goto-line)
-  - (setq line-move-visual nil)
-    - Move by logical lines when a line is wrapped off end of buffer
-  - (find-file)
-  - (open-line)
-    - Insert a blank line after the cursor
-  - (delete-blank-lines)
-    - Delete all but one of many consecutive blank lines
-  - (newline)
-  - (repeat), ~c-x z~
-    - Repeat previous command
-    - keep hittig ~z~ to keep repeating
-  - (scroll-other-window)
-  - (completion-cycle-threshold)
-    - Minibuffer completion cycles always (t), or if possible completions are < n (n)
-  - (repeat-complex-command)
-    - Re-execute a recent minibuffer command from the ~command-history~
-  - (kill-whole-line)
-  - (kill-ring-save)
-  - (zap-to-char)
-    - Like ~df<char>~
-  - (point-to-register r)
-    - Save =point= in register /r/
-  - (jump-to-register r)
-  - (copy-to-register r)
-    - Save region in register /r/
-  - (insert-register r)
-    - Paste text from register /r/
-  - (scroll-preserve-screen-position)
-    - Keeps point in same place when scrolling
-  - (fast-but-imprecise-scrolling)
-    - If scrolling isn't performant
-  - (recenter-top-bottom)
-    - ~c-l~
-  - (recenter)
-    - Current line becomes center of screen
-  - ~scroll-margin~h
-    - Controls when point will start scrolling
-  - (global-font-lock-mode 1)
-  - (hi-lock-mode)
-    - Highlight search results, etc.
-  - Set fringes to show line numbers
-  - (show-trailing-whitespace t)
-  - Toggling =whitespace-mode=
-  - (set-selective-display)
-    - Hide lines of a certain indent level (code folding)
-  - (display-time)
-    - In mode line
-  - (cursor-type)
-    - ~box~
-    - ~bar~
-    - ~hollow~
-  - (global-hl-line-mode 1)
-  - =display-line-numbers=
-  - (backward-paragraph)
-  - (forward-paragraph)
-  - (set-mark-command)
-  - (isearch-ring-advance)
-  - (isearch-ring-retreat)
-  - fill to lines length in comment
-  - (xref-find-definitions) M-.
-    - Requires TAGS table to be built
-  - Surround region with if block and put cursor in condition
-
-
-* Useful emacs commands
-  - ~c-h w~ /key/
-    - where is /key/ bound to ~(where-is)~
+** Useful emacs commands
   - ~c-h i d m emacs <RET> (i|s) /topic/ <RET>~
     - Search indices (i) or text (s) of emacs info manual for /topic/
     - ~,~ to see subsequent matches
@@ -115,7 +89,7 @@
   - Isearch history
   - delete-duplicate-lines
 
-* First Packages to Look at
+** First Packages to Look at
   - Helm
   - Ido
 
