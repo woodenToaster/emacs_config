@@ -69,6 +69,7 @@
   (setq cjh-escape-timer-is-live nil))
 
 (defun cjh-escape-post-command-hook ()
+  ;; TODO(chogan): Don't keep this action in the undo ring
   (backward-delete-char-untabify 2)
   (cjh-normal-state)
   (remove-hook 'post-command-hook 'cjh-escape-post-command-hook))
@@ -318,13 +319,15 @@
 (defun cjh-insert-todo ()
   (interactive)
   (indent-for-tab-command)
-  (insert "// (chogan): ")
+  (comment-dwim nil)
+  (insert " TODO(chogan): ")
   (cjh-insert-state))
 
 (defun cjh-insert-note ()
   (interactive)
   (indent-for-tab-command)
-  (insert "// NOTE(chogan): ")
+  (comment-dwim nil)
+  (insert " NOTE(chogan): ")
   (cjh-insert-state))
 
 (defun cjh-insert-semicolon-at-eol ()
