@@ -10,12 +10,10 @@
 *** TODO Syntax highlighting
 *** TODO Mode bar
 *** TODO Pretty org-mode
-*** TODO fd to escape
 
 ** Bugs
 *** TODO Don't enable cjh mode in info mode, help, etc.
 *** TODO Pasting a whole line puts it below where I expect
-*** TODO org-mode binds M-e (this will be fixed once fd escapes)
 
 ** Functionality
    - (setq line-move-visual nil)
@@ -92,6 +90,7 @@
 ** First Packages to Look at
   - Helm
   - Ido
+  - Ivy
 
 #+begin_src elisp
 (ido-mode 1)

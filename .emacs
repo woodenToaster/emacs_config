@@ -15,9 +15,6 @@
 (setq c-basic-offset 4)
 (setq tab-width 4)
 
-(setq cjh-escape-key-sequence "fd")
-(setq cjh-escape-delay 0.1)
-
 ;; Prompt for compile command when calling `compile`
 (setq compilation-read-command nil)
 (setq compilation-scroll-output 'first-error)
@@ -59,11 +56,17 @@
       (cjh-mode)
       (cjh-normal-state))))
 
-;(define-minor-mode cjh-escape-mode nil
-    (add-hook 'pre-command-hook 'cjh-escape-pre-command-hook)
-   ; (remove-hook 'pre-command-hook 'cjh-escape-pre-command-hook)))
+;; 'fd' to go from insert to normal mode
+;; TODO(chogan): minor mode for this?
+(add-hook 'pre-command-hook 'cjh-escape-pre-command-hook)
 
+(setq cjh-escape-key-sequence "fd")
+(setq cjh-escape-delay 0.1)
 (setq cjh-previous-input nil)
+(setq cjh-escape-timer-is-live nil)
+
+(defun cjh-disable-escape-timer ()
+  (setq cjh-escape-timer-is-live nil))
 
 (defun cjh-escape-post-command-hook ()
   (backward-delete-char-untabify 2)
@@ -71,19 +74,19 @@
   (remove-hook 'post-command-hook 'cjh-escape-post-command-hook))
 
 (defun cjh-escape-pre-command-hook ()
-  (let ((this-key (aref (this-command-keys-vector) 0))
-        (last-key cjh-previous-input))
-    (when (and (= this-key 100)
-               (= last-key 102))
-         (add-hook 'post-command-hook 'cjh-escape-post-command-hook))
-    (setq cjh-previous-input this-key)))
+  (let ((this-key (aref (this-command-keys-vector) 0)))
+    (when (and (eq cjh-command-state nil)
+               (numberp this-key))
+      (when (= this-key (aref cjh-escape-key-sequence 0))
+        (setq cjh-escape-timer-is-live t)
+        (run-at-time cjh-escape-delay nil 'cjh-disable-escape-timer))
+      (when (and (= this-key (aref cjh-escape-key-sequence 1))
+                 (= cjh-previous-input (aref cjh-escape-key-sequence 0))
+                 cjh-escape-timer-is-live)
+        (add-hook 'post-command-hook 'cjh-escape-post-command-hook))
+      (setq cjh-previous-input this-key))))
 
 (define-key cjh-keymap "i" 'cjh-insert-state)
-;; TODO(chogan): Change this to fd
-(global-set-key (kbd "M-e") 'cjh-normal-state)
-
-(define-key cjh-keymap " tn" 'linum-mode)
-(define-key cjh-keymap " tw" 'whitespace-mode)
 
 ;;; Motions
 (define-key cjh-keymap "h" 'backward-char)
@@ -118,6 +121,7 @@
 (define-key cjh-keymap "p" 'yank)
 (define-key cjh-keymap " q" 'save-buffers-kill-terminal)
 (define-key cjh-keymap " r" 'cjh-reload-init-file)
+;; TODO(chogan): This should put the char in the kill ring
 (define-key cjh-keymap "x" 'cjh-forward-delete-char)
 (define-key cjh-keymap "X" 'cjh-backward-delete-char)
 (define-key cjh-keymap "u" 'undo)
@@ -148,6 +152,8 @@
 ;; v
 ;; C-v
 ;; V
+
+
 
 ;; Multi-cursor mode
 ;; C-n
@@ -216,6 +222,8 @@
 (define-key cjh-keymap " h?" 'help-for-help)
 
 ;;; Visuals
+(define-key cjh-keymap " tn" 'linum-mode)
+(define-key cjh-keymap " tw" 'whitespace-mode)
 
 ;; From Casey
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
