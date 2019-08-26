@@ -10,6 +10,7 @@
 *** TODO Syntax highlighting
 *** TODO Mode bar
 *** TODO Pretty org-mode
+*** TODO Return to last position
 
 ** Bugs
 *** TODO Don't enable cjh mode in info mode, help, etc.
