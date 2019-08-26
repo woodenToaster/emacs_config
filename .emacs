@@ -172,6 +172,14 @@
 ;;; File Commands
 (define-key cjh-keymap " ff" 'find-file)
 (define-key cjh-keymap " fF" 'find-file-other-window)
+(define-key cjh-keymap " fr" 'find-file-read-only)
+;; " fR" rename file
+
+;;; Directories
+;; " ls" 'list-directory
+;; " ll" 'list-directory with prefix arg
+;; (setq list-directory-verbose-switches "-la")
+;; " d" 'dired
 
 ;;; Buffer commands
 (define-key cjh-keymap " bb" 'switch-to-buffer)
