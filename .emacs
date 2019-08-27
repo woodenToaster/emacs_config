@@ -106,16 +106,16 @@
 (define-key cjh-keymap "T" (lambda () (interactive) (move-to-window-line cjh-scroll-margin)))
 (define-key cjh-keymap "M" 'move-to-window-line-top-bottom)
 (define-key cjh-keymap "B" (lambda () (interactive) (move-to-window-line (- 0 cjh-scroll-margin))))
-;; e
+(define-key cjh-keymap "e" 'cjh-end-of-word)
 ;; 0
 ;; f
 ;; t
-;; <number> gg
+(define-key cjh-keymap " gg" 'goto-line)
 ;; gd
 
 ;;; Editing
 (define-key cjh-keymap "dd" 'cjh-kill-line)
-;; TODO(chogan): "dd" that doesn't kill the newline
+(define-key cjh-keymap "dn" 'cjh-kill-line-leave-newline)
 (define-key cjh-keymap "D" 'kill-line)
 (define-key cjh-keymap "yy" 'cjh-copy-line)
 ;; TODO(chogan): Doesn't insert the newline
@@ -414,6 +414,12 @@
   (move-beginning-of-line nil)
   (kill-line))
 
+(defun cjh-kill-line-leave-newline ()
+  (interactive)
+  (let ((kill-whole-line nil))
+    (move-beginning-of-line nil)
+    (kill-line)))
+
 (defun cjh-copy-line ()
   (interactive)
   (let ((beg (line-beginning-position))
@@ -480,14 +486,14 @@
   (interactive)
   (indent-for-tab-command)
   (comment-dwim nil)
-  (insert " TODO(chogan): ")
+  (insert "TODO(chogan): ")
   (cjh-insert-state))
 
 (defun cjh-insert-note ()
   (interactive)
   (indent-for-tab-command)
   (comment-dwim nil)
-  (insert " NOTE(chogan): ")
+  (insert "NOTE(chogan): ")
   (cjh-insert-state))
 
 (defun cjh-insert-semicolon-at-eol ()
@@ -500,6 +506,12 @@
   (interactive)
   (back-to-indentation)
   (cjh-insert-state))
+
+;; TODO(chogan): Enable multple consecutive uses
+(defun cjh-end-of-word ()
+  (interactive)
+  (forward-word)
+  (backward-char))
 
 (defvar cjh-insert-if0 t)
 
