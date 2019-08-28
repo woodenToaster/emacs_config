@@ -38,12 +38,14 @@
 (defun cjh-insert-state ()
   (interactive)
   (setq-local cursor-type 'bar)
+  (cjh-insert-cursor-color)
   (setq overriding-local-map nil)
   (setq cjh-command-state nil))
 
 (defun cjh-normal-state ()
   (interactive)
   (setq-local cursor-type 'box)
+  (cjh-normal-cursor-color)
   (setq overriding-local-map cjh-keymap)
   (setq cjh-command-state t))
 
@@ -107,7 +109,7 @@
 (define-key cjh-keymap "M" 'move-to-window-line-top-bottom)
 (define-key cjh-keymap "B" (lambda () (interactive) (move-to-window-line (- 0 cjh-scroll-margin))))
 (define-key cjh-keymap "e" 'cjh-end-of-word)
-;; 0
+(define-key cjh-keymap "0" 'beginning-of-line)
 ;; f
 ;; t
 (define-key cjh-keymap " gg" 'goto-line)
@@ -134,7 +136,6 @@
 (define-key cjh-keymap "I" 'cjh-insert-beginning-of-line)
 ;; r
 ;; .
-;; qq
 ;; Y
 ;; J
 ;; s/.../.../g
@@ -143,11 +144,14 @@
 
 ;; Text Objects
 ;; d...
+(define-key cjh-keymap "dw" 'cjh-kill-word)
 ;; dia
 ;; y...
-;; c...
+(define-key cjh-keymap "cw" 'cjh-change-word)
+(define-key cjh-keymap "ciw" 'cjh-change-inner-word)
+(define-key cjh-keymap "C" 'cjh-change-to-eol)
+;; cf...
 ;; ct...
-;; C
 
 ;; Visual Mode
 ;; v
@@ -155,6 +159,10 @@
 ;; V
 
 
+;; TODO(chogan): Check for \n and if found, past on line below
+;; so yy p works as I expect
+(defun cjh-paste ()
+  (interactive))
 
 ;; Multi-cursor mode
 ;; C-n
@@ -188,6 +196,7 @@
 (define-key cjh-keymap " bD" 'clean-buffer-list)
 (define-key cjh-keymap " bp" 'previous-buffer)
 (define-key cjh-keymap " bn" 'next-buffer)
+;; " b<tab>"
 
 ;;; Window commands
 (define-key cjh-keymap " wl" 'other-window)
@@ -206,9 +215,9 @@
 (define-key cjh-keymap ",t" 'cjh-insert-todo)
 (define-key cjh-keymap ",n" 'cjh-insert-note)
 (define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
-(define-key cjh-keymap (kbd "C-;") 'cjh-inser-semicolon-at-eol)
-(define-key cjh-keymap (kbd ",fb") 'c-beginning-of-defun)
-(define-key cjh-keymap (kbd ",fe") 'c-end-of-defun)
+(define-key cjh-keymap (kbd "C-;") 'cjh-insert-semicolon-at-eol)
+(define-key cjh-keymap ",fb" 'c-beginning-of-defun)
+(define-key cjh-keymap ",fe" 'c-end-of-defun)
 
 (global-set-key (kbd "C-;") 'cjh-insert-semicolon-at-eol)
 
@@ -237,20 +246,17 @@
 ;; From Casey
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
 (set-face-attribute 'default t :font "Liberation Mono-11.5")
-;; (set-face-attribute 'font-lock-builtin-face nil :foreground "#DAB98F")
-;; (set-face-attribute 'font-lock-comment-face nil :foreground "gray50")
-;; (set-face-attribute 'font-lock-constant-face nil :foreground "olive drab")
-;; (set-face-attribute 'font-lock-doc-face nil :foreground "gray50")
-;; (set-face-attribute 'font-lock-function-name-face nil :foreground "burlywood3")
-;; (set-face-attribute 'font-lock-keyword-face nil :foreground "DarkGoldenrod3")
-;; (set-face-attribute 'font-lock-string-face nil :foreground "olive drab")
-;; (set-face-attribute 'font-lock-type-face nil :foreground "burlywood3")
-;; (set-face-attribute 'font-lock-variable-name-face nil :foreground "burlywood3")
 
 (defun true-color-p ()
   (or
    (display-graphic-p)
    (= (tty-display-color-cells) 16777216)))
+
+(defun cjh-insert-cursor-color ()
+  (set-cursor-color "#7cfc00"))
+
+(defun cjh-normal-cursor-color ()
+  (set-cursor-color (if (true-color-p) "#ffcd48" "#d0d0d0")))
 
 (defun cjh-create-theme (theme-name)
   (let ((class '((class color) (min-colors 89)))
@@ -268,7 +274,7 @@
         (cblk-bg       (if (true-color-p) "#2f2b33" "#262626"))
         (cblk-ln       (if (true-color-p) "#827591" "#af5faf"))
         (cblk-ln-bg    (if (true-color-p) "#373040" "#333333"))
-        (cursor        (if (true-color-p) "#e3dedd" "#d0d0d0"))
+        (cursor        (if (true-color-p) "#ffcd48" "#d0d0d0"))
         (const         (if (true-color-p) "#a45bad" "#d75fd7"))
         (comment       (if (true-color-p) "#2aa1ae" "#008787"))
         (comment-light (if (true-color-p) "#2aa1ae" "#008787"))
@@ -409,6 +415,10 @@
   (move-end-of-line nil)
   (cjh-insert-state))
 
+(defun cjh-kill-word ()
+  (interactive)
+  (kill-word 1))
+
 (defun cjh-kill-line ()
   (interactive)
   (move-beginning-of-line nil)
@@ -481,6 +491,22 @@
   (move-end-of-line nil)
   (newline)
   (cjh-insert-state))
+
+(defun cjh-change-word ()
+  (interactive)
+  (kill-word 1)
+  (cjh-insert-state))
+
+(defun cjh-change-inner-word ()
+  (interactive)
+  (backward-word)
+  (cjh-change-word))
+
+(defun cjh-change-to-eol ()
+  (interactive)
+  (let ((kill-whole-line nil))
+    (kill-line)
+    (cjh-insert-state)))
 
 (defun cjh-insert-todo ()
   (interactive)

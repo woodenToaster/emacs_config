@@ -3,18 +3,20 @@
 * TODO
 
 ** Features
-*** TODO Modes
-    - Visual
-    - Motion
+*** TODO Motion Objects
+*** TODO Visual Mode
 *** TODO Layouts
 *** TODO Syntax highlighting
 *** TODO Mode bar
 *** TODO Pretty org-mode
 *** TODO Return to last position
+*** TODO '.' for repeating last command
 
 ** Bugs
 *** TODO Don't enable cjh mode in info mode, help, etc.
 *** TODO Pasting a whole line puts it below where I expect
+*** TODO Incremental search is pretty broken
+*** TODO Don't put fd escape in kill ring
 
 ** Functionality
    - (setq line-move-visual nil)
@@ -63,6 +65,8 @@
    - fill to lines length in comment
    - (xref-find-definitions) M-.
      - Requires TAGS table to be built
+   - (icomplete-mode)
+     - Fast buffer completion
 
 ** Useful emacs commands
   - ~c-h i d m emacs <RET> (i|s) /topic/ <RET>~
@@ -88,7 +92,7 @@
   - Isearch history
   - delete-duplicate-lines
 
-** First Packages to Look at
+** Packages to Look at
   - Helm
   - Ido
   - Ivy
