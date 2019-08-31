@@ -20,8 +20,9 @@
 (setq compilation-scroll-output 'first-error)
 (setq cjh-scroll-margin 5)
 (setq scroll-margin cjh-scroll-margin)
-;; Don't split windows
-(set-frame-parameter nil 'unsplittable t)
+(setq pop-up-windows nil)
+;; Select window where help appears
+(setq help-window-select t)
 
 ;; Save layout and buffers between sessions
 (desktop-save-mode 1)
@@ -31,8 +32,14 @@
 (defvar cjh-mode-exclusion-list '())
 (setq cjh-mode-exclusion-list (list 'help-mode 'info-mode))
 
+(defvar cjh-isearch-state
+  "t when within an isearch, otherwise nil."
+  nil)
+
 ;;; Modes
 (defvar cjh-command-state t)
+;; TODO(chogan): cjh-mode makes its own map: cjh-mode-map.
+;; Do I need to create a custom one?
 (defvar cjh-keymap (make-sparse-keymap))
 
 (defun cjh-insert-state ()
@@ -58,14 +65,14 @@
       (cjh-mode)
       (cjh-normal-state))))
 
-;; 'fd' to go from insert to normal mode
-;; TODO(chogan): minor mode for this?
-(add-hook 'pre-command-hook 'cjh-escape-pre-command-hook)
-
 (setq cjh-escape-key-sequence "fd")
 (setq cjh-escape-delay 0.1)
 (setq cjh-previous-input nil)
 (setq cjh-escape-timer-is-live nil)
+
+;; 'fd' to go from insert to normal mode
+;; TODO(chogan): minor mode for this?
+(add-hook 'pre-command-hook 'cjh-escape-pre-command-hook)
 
 (defun cjh-disable-escape-timer ()
   (setq cjh-escape-timer-is-live nil))
@@ -99,6 +106,9 @@
 (define-key cjh-keymap "A" 'cjh-eol-insert)
 (define-key cjh-keymap "w" 'forward-word)
 (define-key cjh-keymap "b" 'backward-word)
+;; "W"
+;; "B"
+;; "E"
 (define-key cjh-keymap "$" 'cjh-move-to-end-of-line)
 (define-key cjh-keymap "^" 'back-to-indentation)
 (define-key cjh-keymap (kbd "C-d") 'cjh-scroll-up-half)
@@ -110,10 +120,22 @@
 (define-key cjh-keymap "B" (lambda () (interactive) (move-to-window-line (- 0 cjh-scroll-margin))))
 (define-key cjh-keymap "e" 'cjh-end-of-word)
 (define-key cjh-keymap "0" 'beginning-of-line)
-;; f
-;; t
+(define-key cjh-keymap "f" 'cjh-find-forward)
+(define-key cjh-keymap "F" 'cjh-find-backward)
+(define-key cjh-keymap "t" 'cjh-find-forward-till)
+(define-key cjh-keymap "T" 'cjh-find-backward-till)
+(define-key cjh-keymap ";" 'cjh-repeat-last-find)
 (define-key cjh-keymap " gg" 'goto-line)
 ;; gd
+;; C-o
+;; (define-key cjh-keymap "m" 'cjh-set-mark)
+;; (defun cjh-set-mark ()
+;;   (interactive)
+;;   (call-interactively 'set-mark-command)
+;;   (call-interactively 'set-mark-command))
+
+;; m<x> (store mark in register <x>
+;; gm<x> (go to mark in register <x>)
 
 ;;; Editing
 (define-key cjh-keymap "dd" 'cjh-kill-line)
@@ -137,7 +159,8 @@
 ;; r
 ;; .
 ;; Y
-;; J
+;; TODO(chogan): Moves bottom line up instead of top line down
+(define-key cjh-keymap "J" 'delete-indentation)
 ;; s/.../.../g
 
 ;; Surround with ("[{
@@ -145,19 +168,40 @@
 ;; Text Objects
 ;; d...
 (define-key cjh-keymap "dw" 'cjh-kill-word)
+;; dW
 ;; dia
 ;; y...
+;; yw
+;; ye
+;; yiw
+;; yb
+;; y (region)
 (define-key cjh-keymap "cw" 'cjh-change-word)
+;; cW
+;; ce
+;; cE
 (define-key cjh-keymap "ciw" 'cjh-change-inner-word)
+;; cia
 (define-key cjh-keymap "C" 'cjh-change-to-eol)
+
 ;; cf...
 ;; ct...
+;; (fill-paragraph) M-q - After writing a long one line comment, format to fill line
+;; (fill-region) - Realign comment block to fill-column
+
+(define-key cjh-keymap " u" 'universal-argument)
 
 ;; Visual Mode
-;; v
-;; C-v
+(define-key cjh-keymap "v" 'cjh-visual-state)
 ;; V
+;; C-v
 
+;; TODO(chogan):
+;; (defvar cjh-visual-state nil)
+
+(defun cjh-visual-state ()
+  (interactive)
+  (call-interactively 'set-mark-command))
 
 ;; TODO(chogan): Check for \n and if found, past on line below
 ;; so yy p works as I expect
@@ -170,18 +214,24 @@
 
 ;; Search
 ;; TODO(chogan): Doesn't really work.
-(define-key cjh-keymap "/" 'isearch-forward)
-(define-key cjh-keymap "?" 'isearch-backward)
+(define-key cjh-keymap "/" 'cjh-isearch-forward)
+(define-key cjh-keymap "?" 'cjh-isearch-backward)
+(define-key cjh-keymap "n" 'cjh-isearch-next)
+(define-key cjh-keymap "N" 'cjh-isearch-prev)
+;; *
 ;; SPC /
 
 ;; iedit mode
 ;; * e
 
+;; Compilation
+;; " en"
+
 ;;; File Commands
 (define-key cjh-keymap " ff" 'find-file)
 (define-key cjh-keymap " fF" 'find-file-other-window)
 (define-key cjh-keymap " fr" 'find-file-read-only)
-;; " fR" rename file
+;; (define-key cjh-keymap " fR" 'cjh-rename-file)
 
 ;;; Directories
 ;; " ls" 'list-directory
@@ -206,18 +256,18 @@
 
 ;;; Custom Bindings
 
+(define-key cjh-keymap ",b" 'compile)
+(define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
+(define-key cjh-keymap ",gb" 'c-beginning-of-defun)
+(define-key cjh-keymap ",ge" 'c-end-of-defun)
+(define-key cjh-keymap ",mf" 'mark-defun)
+(define-key cjh-keymap ",n" 'cjh-insert-note)
+(define-key cjh-keymap ",r" 'recompile)
 ;; Surround region with if statement
 (define-key cjh-keymap ",si" 'cjh-wrap-region-in-if)
-(define-key cjh-keymap ",w" 'save-buffer)
-(define-key cjh-keymap ",b" 'compile)
-(define-key cjh-keymap ",r" 'recompile)
-(define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
 (define-key cjh-keymap ",t" 'cjh-insert-todo)
-(define-key cjh-keymap ",n" 'cjh-insert-note)
-(define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
+(define-key cjh-keymap ",w" 'save-buffer)
 (define-key cjh-keymap (kbd "C-;") 'cjh-insert-semicolon-at-eol)
-(define-key cjh-keymap ",fb" 'c-beginning-of-defun)
-(define-key cjh-keymap ",fe" 'c-end-of-defun)
 
 (global-set-key (kbd "C-;") 'cjh-insert-semicolon-at-eol)
 
@@ -406,6 +456,13 @@
 (enable-theme 'cjh-theme)
 
 ;;; Functions
+
+;; (defun cjh-rename-file ()
+;;   (interactive)
+;;   (let ((this-file (buffer-file-name)))
+;;     ;; TODO(chogan): Prompt for file name and append to path dir of this-file
+;;     (rename-file this-file (read-string ...))))
+
 (defun cjh-reload-init-file ()
   (interactive)
   (load-file user-init-file))
@@ -533,11 +590,82 @@
   (back-to-indentation)
   (cjh-insert-state))
 
-;; TODO(chogan): Enable multple consecutive uses
+;; TODO(chogan): Enable multiple consecutive uses
 (defun cjh-end-of-word ()
   (interactive)
   (forward-word)
   (backward-char))
+
+(defvar cjh-last-find-char nil)
+(defvar cjh-last-end-of-find-point nil)
+(defvar cjh-last-find-direction nil)
+
+;; TODO(chogan): Don't require pressing enter
+(defun cjh-find-forward ()
+  (interactive)
+  (let ((char (read-string "Find char: "))
+        (end-of-find-point (save-excursion (end-of-line) (point))))
+    (if (search-forward char end-of-find-point t)
+        (progn
+          (backward-char)
+          (setq cjh-last-find-char char)
+          (setq cjh-last-end-of-find-point end-of-find-point)
+          (setq cjh-last-find-direction 1)))))
+
+(defun cjh-repeat-last-find ()
+  (interactive)
+  (if (eq cjh-last-find-direction 1)
+      (cjh-repeat-last-find-forward)
+    (cjh-repeat-last-find-backward)))
+
+(defun cjh-repeat-last-find-forward ()
+  (interactive)
+  (forward-char)
+  (if (search-forward cjh-last-find-char cjh-last-end-of-find-point t)
+      (backward-char)))
+
+(defun cjh-repeat-last-find-backward ()
+  (interactive)
+  (search-backward cjh-last-find-char cjh-last-end-of-find-point t))
+
+;; TODO(chogan): Don't require pressing enter
+(defun cjh-find-backward ()
+  (interactive)
+  (let ((char (read-string "Find char: "))
+        (end-of-find-point (save-excursion (beginning-of-line) (point))))
+    (if (search-backward char end-of-find-point t)
+        (progn
+          (setq cjh-last-find-char char)
+          (setq cjh-last-end-of-find-point end-of-find-point)
+          (setq cjh-last-find-direction 0)))))
+
+(defun cjh-find-forward-till ()
+  (interactive))
+
+(defun cjh-find-backward-till ()
+  (interactive))
+
+(defun cjh-isearch-forward ()
+  (interactive)
+  (setq cjh-isearch-state t)
+  (isearch-forward))
+
+(defun cjh-isearch-backward ()
+  (interactive)
+  (setq cjh-isearch-state t)
+  (isearch-backward))
+
+;; TODO(chogan): Broken
+(defun cjh-isearch-next ()
+  (interactive)
+  (if cjh-isearch-state
+      (isearch-repeat-forward)))
+
+;; TODO(chogan): Broken
+(defun cjh-isearch-prev ()
+  (interactive)
+  (if cjh-isearch-state
+      (isearch-repeat-backward)))
 
 (defvar cjh-insert-if0 t)
 
@@ -612,7 +740,7 @@
   (tool-bar-mode -1)
   (scroll-bar-mode -1))
 
-;;; hooks
+;;; Hooks
 (add-hook 'window-setup-hook 'post-load-stuff t)
 ;; Should never be in normal state in the minibuffer
 (add-hook 'minibuffer-setup-hook 'cjh-insert-state)
@@ -624,11 +752,11 @@
 ;; Include underscores in word
 (add-hook 'python-mode-hook #'(lambda () (modify-syntax-entry ?_ "w")))
 (add-hook 'c-mode-common-hook #'(lambda () (modify-syntax-entry ?_ "w")))
-;; TODO(chogan): Should states be buffer local?
-;; (add-hook 'help-mode-hook 'cjh-insert-state)
-;; (add-hook 'info-mode-hook 'cjh-insert-state)
+(add-hook 'help-mode-hook 'cjh-insert-state)
+(add-hook 'info-mode-hook (lambda () (cjh-mode -1)))
+;; (add-hook 'isearch-mode-end-hook (lambda () (setq cjh-isearch-state nil)))
 
-;; TODO(chogan): Make global?
+;; TODO(chogan): Make global ?
 (cjh-mode)
 (cjh-normal-state)
 

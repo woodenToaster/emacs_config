@@ -3,10 +3,10 @@
 * TODO
 
 ** Features
-*** TODO Motion Objects
+*** TODO Motion Objects?
 *** TODO Visual Mode
-*** TODO Layouts
-*** TODO Syntax highlighting
+*** TODO Layouts?
+*** TODO Custom theme?
 *** TODO Mode bar
 *** TODO Pretty org-mode
 *** TODO Return to last position
