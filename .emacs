@@ -26,7 +26,12 @@
 
 ;; Save layout and buffers between sessions
 (desktop-save-mode 1)
+;; Don't blink the cursor
 (blink-cursor-mode 0)
+;; No extra stuff in window
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
 
 ;; Major modes that shouldn't enable cjh-mode
 (defvar cjh-mode-exclusion-list '())
@@ -41,29 +46,32 @@
 ;; TODO(chogan): cjh-mode makes its own map: cjh-mode-map.
 ;; Do I need to create a custom one?
 (defvar cjh-keymap (make-sparse-keymap))
+(defvar cjh-org-keymap
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map cjh-keymap)
+    map))
 
 (defun cjh-insert-state ()
   (interactive)
   (setq-local cursor-type 'bar)
   (cjh-insert-cursor-color)
-  (setq overriding-local-map nil)
-  (setq cjh-command-state nil))
+  (setq-local overriding-local-map nil)
+  (setq-local cjh-command-state nil))
 
 (defun cjh-normal-state ()
   (interactive)
   (setq-local cursor-type 'box)
   (cjh-normal-cursor-color)
-  (setq overriding-local-map cjh-keymap)
-  (setq cjh-command-state t))
+  (setq-local overriding-local-map cjh-keymap)
+  (setq-local cjh-command-state t))
 
 (define-minor-mode cjh-mode nil nil nil nil
-  (lambda ()
-    ;; TODO(chogan): This isn't working as expected
-    (unless (or
-             (memq major-mode cjh-mode-exclusion-list)
-             buffer-read-only)
-      (cjh-mode)
-      (cjh-normal-state))))
+  (unless (or
+           (memq major-mode cjh-mode-exclusion-list)
+           buffer-read-only)
+    (if cjh-mode
+        (cjh-normal-state)
+      (cjh-insert-state))))
 
 (setq cjh-escape-key-sequence "fd")
 (setq cjh-escape-delay 0.1)
@@ -78,7 +86,6 @@
   (setq cjh-escape-timer-is-live nil))
 
 (defun cjh-escape-post-command-hook ()
-  ;; TODO(chogan): Don't keep this action in the undo ring
   (backward-delete-char-untabify 2)
   (cjh-normal-state)
   (remove-hook 'post-command-hook 'cjh-escape-post-command-hook))
@@ -142,11 +149,9 @@
 (define-key cjh-keymap "dn" 'cjh-kill-line-leave-newline)
 (define-key cjh-keymap "D" 'kill-line)
 (define-key cjh-keymap "yy" 'cjh-copy-line)
-;; TODO(chogan): Doesn't insert the newline
-(define-key cjh-keymap "p" 'yank)
+(define-key cjh-keymap "p" 'cjh-paste)
 (define-key cjh-keymap " q" 'save-buffers-kill-terminal)
 (define-key cjh-keymap " r" 'cjh-reload-init-file)
-;; TODO(chogan): This should put the char in the kill ring
 (define-key cjh-keymap "x" 'cjh-forward-delete-char)
 (define-key cjh-keymap "X" 'cjh-backward-delete-char)
 (define-key cjh-keymap "u" 'undo)
@@ -167,6 +172,11 @@
 
 ;; Text Objects
 ;; d...
+;; TODO(chogan): This is shadowed by "dw"
+;; (define-key cjh-keymap "d" 'cjh-kill-region)
+;; (defun cjh-kill-region (begin end)
+;;   (interactive "r")
+;;   (kill-region begin end))
 (define-key cjh-keymap "dw" 'cjh-kill-word)
 ;; dW
 ;; dia
@@ -175,7 +185,8 @@
 ;; ye
 ;; yiw
 ;; yb
-;; y (region)
+;; TODO(chogan): Shadowed by yy
+;; (define-key cjh-keymap "y" 'cjh-copy-region)
 (define-key cjh-keymap "cw" 'cjh-change-word)
 ;; cW
 ;; ce
@@ -193,20 +204,36 @@
 
 ;; Visual Mode
 (define-key cjh-keymap "v" 'cjh-visual-state)
+(define-key cjh-keymap "V" 'cjh-start-visual-line-selection)
 ;; V
 ;; C-v
 
 ;; TODO(chogan):
 ;; (defvar cjh-visual-state nil)
 
+(defun cjh-start-visual-line-selection ()
+  (interactive)
+  (beginning-of-line)
+  (call-interactively 'set-mark-command)
+  (end-of-line))
+
 (defun cjh-visual-state ()
   (interactive)
   (call-interactively 'set-mark-command))
 
-;; TODO(chogan): Check for \n and if found, past on line below
-;; so yy p works as I expect
 (defun cjh-paste ()
-  (interactive))
+  "Paste with special newline handling.
+
+If the text to paste ends with a newline, open a newline below
+the line at point and insert the line there."
+  (interactive)
+  (let ((to-paste (car kill-ring-yank-pointer)))
+    (if (string-match "\n$" to-paste)
+        (progn
+          (next-line)
+          (beginning-of-line)
+          (yank))
+      (yank))))
 
 ;; Multi-cursor mode
 ;; C-n
@@ -293,6 +320,13 @@
 (define-key cjh-keymap " tn" 'linum-mode)
 (define-key cjh-keymap " tw" 'whitespace-mode)
 
+;;; org-mode key bindings
+;; schedule
+;; report
+;; clock in
+;; clock out
+;; t
+
 ;; From Casey
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
 (set-face-attribute 'default t :font "Liberation Mono-11.5")
@@ -307,6 +341,9 @@
 
 (defun cjh-normal-cursor-color ()
   (set-cursor-color (if (true-color-p) "#ffcd48" "#d0d0d0")))
+
+(defun cjh-set-help-cursor ()
+  (set-cursor-color (if (true-color-p) "#87ceeb" "#00ccff")))
 
 (defun cjh-create-theme (theme-name)
   (let ((class '((class color) (min-colors 89)))
@@ -423,9 +460,9 @@
     `(show-paren-mismatch ((,class (:foreground ,err :inherit bold)))))
 
     ;; org-mode
-    `(org-level-1 ((,class (:inherit bold :bold ,nil :foreground ,head1 :height 1.0))))
-    `(org-level-2 ((,class (:inherit bold :bold ,nil :foreground ,head2 :height 1.0))))
-    `(org-level-3 ((,class (:bold nil :foreground ,head3 :height 1.0))))
+    `(org-level-1 ((,class (:inherit bold :bold ,nil :foreground ,head1 :height 2.0))))
+    `(org-level-2 ((,class (:inherit bold :bold ,nil :foreground ,head2 :height 1.2))))
+    `(org-level-3 ((,class (:bold nil :foreground ,head3 :height 1.1))))
     `(org-level-4 ((,class (:bold nil :foreground ,head4 ))))
     `(org-level-5 ((,class (:bold nil :foreground ,head1))))
     `(org-level-6 ((,class (:bold nil :foreground ,head2))))
@@ -489,17 +526,18 @@
 
 (defun cjh-copy-line ()
   (interactive)
-  (let ((beg (line-beginning-position))
-        (end (line-end-position)))
-    (copy-region-as-kill beg end)))
+  (let ((old-pos (point)))
+    (kill-whole-line)
+    (yank)
+    (goto-char old-pos)))
 
 (defun cjh-forward-delete-char ()
   (interactive)
-  (delete-forward-char 1))
+  (delete-forward-char 1 t))
 
 (defun cjh-backward-delete-char ()
   (interactive)
-  (backward-delete-char-untabify 1))
+  (backward-delete-char-untabify 1 t))
 
 (defun cjh-forward-and-insert ()
   (interactive)
@@ -595,6 +633,10 @@
   (interactive)
   (forward-word)
   (backward-char))
+
+(defun cjh-copy-region (begin end)
+  (interactive "r")
+  (kill-ring-save begin end))
 
 (defvar cjh-last-find-char nil)
 (defvar cjh-last-end-of-find-point nil)
@@ -733,15 +775,15 @@
    nil
    '((cjh-c-mode-font-lock-if0 (0 font-lock-comment-face prepend))) 'add-to-end))
 
-;; From Casey
-(defun post-load-stuff ()
+(defun cjh-quit-help ()
   (interactive)
-  (menu-bar-mode -1)
-  (tool-bar-mode -1)
-  (scroll-bar-mode -1))
+  (cjh-normal-state)
+  (quit-window))
+
+(defun enable-cjh-mode ()
+  (cjh-mode 1))
 
 ;;; Hooks
-(add-hook 'window-setup-hook 'post-load-stuff t)
 ;; Should never be in normal state in the minibuffer
 (add-hook 'minibuffer-setup-hook 'cjh-insert-state)
 (add-hook 'minibuffer-exit-hook 'cjh-normal-state)
@@ -752,13 +794,12 @@
 ;; Include underscores in word
 (add-hook 'python-mode-hook #'(lambda () (modify-syntax-entry ?_ "w")))
 (add-hook 'c-mode-common-hook #'(lambda () (modify-syntax-entry ?_ "w")))
-(add-hook 'help-mode-hook 'cjh-insert-state)
-(add-hook 'info-mode-hook (lambda () (cjh-mode -1)))
+(add-hook 'help-mode-hook 'cjh-set-help-cursor)
+(add-hook 'help-mode-hook (lambda () (local-set-key "q" 'cjh-quit-help)))
 ;; (add-hook 'isearch-mode-end-hook (lambda () (setq cjh-isearch-state nil)))
-
-;; TODO(chogan): Make global ?
-(cjh-mode)
-(cjh-normal-state)
+(add-hook 'prog-mode-hook 'enable-cjh-mode)
+(add-hook 'org-mode-hook 'enable-cjh-mode)
+(add-hook 'messages-buffer-mode-hook 'enable-cjh-mode)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
