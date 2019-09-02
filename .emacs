@@ -1,7 +1,20 @@
-;; Added by Package.el.  This must come before configurations of
-;; installed packages.  Don't delete this line.  If you don't want it,
-;; just comment it out by adding a semicolon to the start of the line.
-;; You may delete these explanatory comments.
+;; (require 'package)
+;; (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+;;                     (not (gnutls-available-p))))
+;;        (proto (if no-ssl "http" "https")))
+;;   (when no-ssl
+;;     (warn "\
+;; Your version of Emacs does not support SSL connections,
+;; which is unsafe because it allows man-in-the-middle attacks.
+;; There are two things you can do about this warning:
+;; 1. Install an Emacs version that does support SSL and be safe.
+;; 2. Remove this warning from your init file so you won't see it again."))
+;;   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+;;   ;; (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+;;   (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+;;   (when (< emacs-major-version 24)
+;;     ;; For important compatibility libraries like cl-lib
+;;     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
 ;;; Defaults
@@ -16,7 +29,7 @@
 (setq tab-width 4)
 
 ;; Prompt for compile command when calling `compile`
-(setq compilation-read-command nil)
+(setq compilation-read-command t)
 (setq compilation-scroll-output 'first-error)
 (setq cjh-scroll-margin 5)
 (setq scroll-margin cjh-scroll-margin)
@@ -26,6 +39,7 @@
 
 ;; Save layout and buffers between sessions
 (desktop-save-mode 1)
+(electric-pair-mode 1)
 ;; Don't blink the cursor
 (blink-cursor-mode 0)
 ;; No extra stuff in window
@@ -88,6 +102,7 @@
 (defun cjh-escape-post-command-hook ()
   (backward-delete-char-untabify 2)
   (cjh-normal-state)
+  (push-mark-command nil)
   (remove-hook 'post-command-hook 'cjh-escape-post-command-hook))
 
 (defun cjh-escape-pre-command-hook ()
@@ -113,18 +128,15 @@
 (define-key cjh-keymap "A" 'cjh-eol-insert)
 (define-key cjh-keymap "w" 'forward-word)
 (define-key cjh-keymap "b" 'backward-word)
-;; "W"
-;; "B"
-;; "E"
+(define-key cjh-keymap "W" 'cjh-forward-whitespace)
+(define-key cjh-keymap "B" 'cjh-backward-whitespace)
 (define-key cjh-keymap "$" 'cjh-move-to-end-of-line)
 (define-key cjh-keymap "^" 'back-to-indentation)
 (define-key cjh-keymap (kbd "C-d") 'cjh-scroll-up-half)
 (define-key cjh-keymap (kbd "C-u") 'cjh-scroll-down-half)
 (define-key cjh-keymap "gg" 'beginning-of-buffer)
 (define-key cjh-keymap "G" 'end-of-buffer)
-(define-key cjh-keymap "T" (lambda () (interactive) (move-to-window-line cjh-scroll-margin)))
 (define-key cjh-keymap "M" 'move-to-window-line-top-bottom)
-(define-key cjh-keymap "B" (lambda () (interactive) (move-to-window-line (- 0 cjh-scroll-margin))))
 (define-key cjh-keymap "e" 'cjh-end-of-word)
 (define-key cjh-keymap "0" 'beginning-of-line)
 (define-key cjh-keymap "f" 'cjh-find-forward)
@@ -133,22 +145,13 @@
 (define-key cjh-keymap "T" 'cjh-find-backward-till)
 (define-key cjh-keymap ";" 'cjh-repeat-last-find)
 (define-key cjh-keymap " gg" 'goto-line)
-;; gd
-;; C-o
-;; (define-key cjh-keymap "m" 'cjh-set-mark)
-;; (defun cjh-set-mark ()
-;;   (interactive)
-;;   (call-interactively 'set-mark-command)
-;;   (call-interactively 'set-mark-command))
-
-;; m<x> (store mark in register <x>
-;; gm<x> (go to mark in register <x>)
+(define-key cjh-keymap "gd" 'xref-find-definitions)
+(define-key cjh-keymap "m" 'cjh-store-mark)
+(define-key cjh-keymap "'" 'cjh-goto-mark)
+(define-key cjh-keymap (kbd "C-o") 'pop-to-mark-command)
 
 ;;; Editing
-(define-key cjh-keymap "dd" 'cjh-kill-line)
-(define-key cjh-keymap "dn" 'cjh-kill-line-leave-newline)
 (define-key cjh-keymap "D" 'kill-line)
-(define-key cjh-keymap "yy" 'cjh-copy-line)
 (define-key cjh-keymap "p" 'cjh-paste)
 (define-key cjh-keymap " q" 'save-buffers-kill-terminal)
 (define-key cjh-keymap " r" 'cjh-reload-init-file)
@@ -161,42 +164,56 @@
 (define-key cjh-keymap "O" 'cjh-open-newline-above)
 (define-key cjh-keymap "o" 'cjh-open-newline-below)
 (define-key cjh-keymap "I" 'cjh-insert-beginning-of-line)
-;; r
-;; .
-;; Y
-;; TODO(chogan): Moves bottom line up instead of top line down
-(define-key cjh-keymap "J" 'delete-indentation)
+(define-key cjh-keymap "r" 'cjh-replace-char)
+(define-key cjh-keymap "J" 'cjh-delete-indentation)
+;; TODO(chogan): Improve semantics of this
+(define-key cjh-keymap "." 'repeat)
 ;; s/.../.../g
+;; " ry"
 
 ;; Surround with ("[{
-
 ;; Text Objects
-;; d...
-;; TODO(chogan): This is shadowed by "dw"
-;; (define-key cjh-keymap "d" 'cjh-kill-region)
-;; (defun cjh-kill-region (begin end)
-;;   (interactive "r")
-;;   (kill-region begin end))
-(define-key cjh-keymap "dw" 'cjh-kill-word)
+(define-key cjh-keymap "d" 'cjh-delete)
+(defun cjh-delete (beg end)
+  (interactive "r")
+  (if (use-region-p)
+      (kill-region beg end)
+    (let ((char (read-char)))
+      (cond
+       ((char-equal ?d char) (cjh-kill-line))
+       ((char-equal ?n char) (cjh-kill-line-leave-newline))
+       ((char-equal ?w char) (cjh-kill-word))
+       ;; ((char-equal ?W char) (cjh-kill-whitespace-forward))
+       ((char-equal ?l char) (delete-blank-lines))))))
 ;; dW
 ;; dia
-;; y...
+;; df...
+;; dt...
+(define-key cjh-keymap "y" 'cjh-yank)
+(defun cjh-yank (beg end)
+  (interactive "r")
+  (if (use-region-p)
+      (message "Saved %s to %s" beg end)
+      (kill-ring-save beg end)
+    (let ((char (read-char)))
+      (cond
+       ((char-equal ?y char) (cjh-copy-line))
+       ))))
+
 ;; yw
 ;; ye
 ;; yiw
 ;; yb
-;; TODO(chogan): Shadowed by yy
-;; (define-key cjh-keymap "y" 'cjh-copy-region)
 (define-key cjh-keymap "cw" 'cjh-change-word)
+(define-key cjh-keymap "ciw" 'cjh-change-inner-word)
+(define-key cjh-keymap "C" 'cjh-change-to-eol)
 ;; cW
 ;; ce
 ;; cE
-(define-key cjh-keymap "ciw" 'cjh-change-inner-word)
 ;; cia
-(define-key cjh-keymap "C" 'cjh-change-to-eol)
-
 ;; cf...
 ;; ct...
+
 ;; (fill-paragraph) M-q - After writing a long one line comment, format to fill line
 ;; (fill-region) - Realign comment block to fill-column
 
@@ -204,8 +221,8 @@
 
 ;; Visual Mode
 (define-key cjh-keymap "v" 'cjh-visual-state)
+;; TODO(chogan): Not quite right
 (define-key cjh-keymap "V" 'cjh-start-visual-line-selection)
-;; V
 ;; C-v
 
 ;; TODO(chogan):
@@ -240,7 +257,10 @@ the line at point and insert the line there."
 ;; Try Doom emacs multi-cursor package?
 
 ;; Search
-;; TODO(chogan): Doesn't really work.
+;; TODO(chogan): Keep searched option after <RET>
+(defvar cjh-last-searched-string nil
+  "Stores the last searched string so that 'n' and 'N' can cycle through it.")
+
 (define-key cjh-keymap "/" 'cjh-isearch-forward)
 (define-key cjh-keymap "?" 'cjh-isearch-backward)
 (define-key cjh-keymap "n" 'cjh-isearch-next)
@@ -252,7 +272,9 @@ the line at point and insert the line there."
 ;; * e
 
 ;; Compilation
-;; " en"
+(define-key cjh-keymap " en" 'compilation-next-error-function)
+
+(define-key cjh-keymap "  " 'execute-extended-command)
 
 ;;; File Commands
 (define-key cjh-keymap " ff" 'find-file)
@@ -261,10 +283,10 @@ the line at point and insert the line there."
 ;; (define-key cjh-keymap " fR" 'cjh-rename-file)
 
 ;;; Directories
-;; " ls" 'list-directory
-;; " ll" 'list-directory with prefix arg
-;; (setq list-directory-verbose-switches "-la")
-;; " d" 'dired
+(setq list-directory-verbose-switches "-la")
+(define-key cjh-keymap " ls" 'list-directory)
+;; (define-key cjh-keymap " ll" 'cjh-list-directory)
+(define-key cjh-keymap " d" 'dired)
 
 ;;; Buffer commands
 (define-key cjh-keymap " bb" 'switch-to-buffer)
@@ -273,7 +295,10 @@ the line at point and insert the line there."
 (define-key cjh-keymap " bD" 'clean-buffer-list)
 (define-key cjh-keymap " bp" 'previous-buffer)
 (define-key cjh-keymap " bn" 'next-buffer)
-;; " b<tab>"
+(defvar cjh-toggle-tab nil
+  "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
+(define-key cjh-keymap " \t" 'cjh-toggle-prev-buffer)
+
 
 ;;; Window commands
 (define-key cjh-keymap " wl" 'other-window)
@@ -282,7 +307,6 @@ the line at point and insert the line there."
 (define-key cjh-keymap " wd" 'delete-window)
 
 ;;; Custom Bindings
-
 (define-key cjh-keymap ",b" 'compile)
 (define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
 (define-key cjh-keymap ",gb" 'c-beginning-of-defun)
@@ -500,6 +524,16 @@ the line at point and insert the line there."
 ;;     ;; TODO(chogan): Prompt for file name and append to path dir of this-file
 ;;     (rename-file this-file (read-string ...))))
 
+(defun cjh-toggle-prev-buffer ()
+  (interactive)
+  (if cjh-toggle-tab
+      (progn
+        (setq cjh-toggle-tab nil)
+        (next-buffer))
+    (progn
+      (setq cjh-toggle-tab t)
+      (previous-buffer))))
+
 (defun cjh-reload-init-file ()
   (interactive)
   (load-file user-init-file))
@@ -634,10 +668,6 @@ the line at point and insert the line there."
   (forward-word)
   (backward-char))
 
-(defun cjh-copy-region (begin end)
-  (interactive "r")
-  (kill-ring-save begin end))
-
 (defvar cjh-last-find-char nil)
 (defvar cjh-last-end-of-find-point nil)
 (defvar cjh-last-find-direction nil)
@@ -689,12 +719,10 @@ the line at point and insert the line there."
 
 (defun cjh-isearch-forward ()
   (interactive)
-  (setq cjh-isearch-state t)
   (isearch-forward))
 
 (defun cjh-isearch-backward ()
   (interactive)
-  (setq cjh-isearch-state t)
   (isearch-backward))
 
 ;; TODO(chogan): Broken
@@ -709,6 +737,10 @@ the line at point and insert the line there."
   (if cjh-isearch-state
       (isearch-repeat-backward)))
 
+(defun cjh-delete-indentation ()
+  (interactive)
+  (delete-indentation t))
+
 (defvar cjh-insert-if0 t)
 
 (defun cjh-insert-if0-comment ()
@@ -720,6 +752,28 @@ the line at point and insert the line there."
     (progn
       (insert "#endif")
       (setq cjh-insert-if0 t))))
+
+(defun cjh-replace-char (char)
+  (interactive "c")
+  (delete-char 1)
+  (insert-char char 1)
+  (backward-char 1))
+
+(defun cjh-forward-whitespace ()
+  (interactive)
+  (forward-whitespace 1))
+
+(defun cjh-backward-whitespace ()
+  (interactive)
+  (forward-whitespace -1))
+
+(defun cjh-store-mark (char)
+  (interactive "c")
+  (point-to-register char))
+
+(defun cjh-goto-mark (char)
+  (interactive "c")
+  (jump-to-register char))
 
 (defun cjh-wrap-region-in-if (start end)
   (interactive "r")
@@ -812,13 +866,10 @@ the line at point and insert the line there."
      (c++-mode . "linux")
      (java-mode . "java")
      (awk-mode . "awk")
-     (other . "linux"))))
- '(initial-frame-alist (quote ((fullscreen . maximized))))
- '(make-backup-files nil))
+     (other . "linux")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(whitespace-space ((t (:background "grey20" :foreground "darkgray"))))
- '(whitespace-tab ((t (:background "grey22" :foreground "darkgray")))))
+)
