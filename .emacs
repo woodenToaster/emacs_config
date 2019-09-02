@@ -17,6 +17,9 @@
 ;;     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
+;; forward-to-word, backward-to-word for vi-like w, e
+(require 'misc)
+
 ;;; Defaults
 ;; Highlight trailing whitespace
 (setq show-trailing-whitespace t)
@@ -47,16 +50,19 @@
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 
-;; Major modes that shouldn't enable cjh-mode
-(defvar cjh-mode-exclusion-list '())
-(setq cjh-mode-exclusion-list (list 'help-mode 'info-mode))
+(defvar cjh-toggle-tab nil
+  "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
 
-(defvar cjh-isearch-state
-  "t when within an isearch, otherwise nil."
-  nil)
+(defvar cjh-last-searched-string nil
+  "Stores the last searched string so that 'n' and 'N' can cycle through it.")
 
-;;; Modes
-(defvar cjh-command-state t)
+(defvar cjh-mode-exclusion-list '()
+  "Major modes that shouldn't enable cjh-mode")
+(setq cjh-mode-exclusion-list '(help-mode info-mode))
+
+(defvar cjh-command-state t
+  "t when in normal mode, nil when in insert mode")
+
 ;; TODO(chogan): cjh-mode makes its own map: cjh-mode-map.
 ;; Do I need to create a custom one?
 (defvar cjh-keymap (make-sparse-keymap))
@@ -118,197 +124,186 @@
         (add-hook 'post-command-hook 'cjh-escape-post-command-hook))
       (setq cjh-previous-input this-key))))
 
-(define-key cjh-keymap "i" 'cjh-insert-state)
-
-;;; Motions
+;;; Keybindings
+(define-key cjh-keymap "a" 'cjh-forward-and-insert)
+(define-key cjh-keymap "b" 'backward-word)
+(define-key cjh-keymap "c" 'cjh-change)
+(define-key cjh-keymap "d" 'cjh-delete)
+(define-key cjh-keymap "e" 'cjh-end-of-word)
+(define-key cjh-keymap "f" 'cjh-find-forward)
+(define-key cjh-keymap "gd" 'xref-find-definitions)
+(define-key cjh-keymap "ge" 'backward-to-word)
+(define-key cjh-keymap "gg" 'beginning-of-buffer)
 (define-key cjh-keymap "h" 'backward-char)
+(define-key cjh-keymap "i" 'cjh-insert-state)
 (define-key cjh-keymap "j" 'next-line)
 (define-key cjh-keymap "k" 'previous-line)
 (define-key cjh-keymap "l" 'forward-char)
-(define-key cjh-keymap "A" 'cjh-eol-insert)
-(define-key cjh-keymap "w" 'forward-word)
-(define-key cjh-keymap "b" 'backward-word)
-(define-key cjh-keymap "W" 'cjh-forward-whitespace)
-(define-key cjh-keymap "B" 'cjh-backward-whitespace)
-(define-key cjh-keymap "$" 'cjh-move-to-end-of-line)
-(define-key cjh-keymap "^" 'back-to-indentation)
-(define-key cjh-keymap (kbd "C-d") 'cjh-scroll-up-half)
-(define-key cjh-keymap (kbd "C-u") 'cjh-scroll-down-half)
-(define-key cjh-keymap "gg" 'beginning-of-buffer)
-(define-key cjh-keymap "G" 'end-of-buffer)
-(define-key cjh-keymap "M" 'move-to-window-line-top-bottom)
-(define-key cjh-keymap "e" 'cjh-end-of-word)
-(define-key cjh-keymap "0" 'beginning-of-line)
-(define-key cjh-keymap "f" 'cjh-find-forward)
-(define-key cjh-keymap "F" 'cjh-find-backward)
-(define-key cjh-keymap "t" 'cjh-find-forward-till)
-(define-key cjh-keymap "T" 'cjh-find-backward-till)
-(define-key cjh-keymap ";" 'cjh-repeat-last-find)
-(define-key cjh-keymap " gg" 'goto-line)
-(define-key cjh-keymap "gd" 'xref-find-definitions)
 (define-key cjh-keymap "m" 'cjh-store-mark)
-(define-key cjh-keymap "'" 'cjh-goto-mark)
-(define-key cjh-keymap (kbd "C-o") 'pop-to-mark-command)
-
-;;; Editing
-(define-key cjh-keymap "D" 'kill-line)
-(define-key cjh-keymap "p" 'cjh-paste)
-(define-key cjh-keymap " q" 'save-buffers-kill-terminal)
-(define-key cjh-keymap " r" 'cjh-reload-init-file)
-(define-key cjh-keymap "x" 'cjh-forward-delete-char)
-(define-key cjh-keymap "X" 'cjh-backward-delete-char)
-(define-key cjh-keymap "u" 'undo)
-(define-key cjh-keymap "a" 'cjh-forward-and-insert)
-(define-key cjh-keymap "[ " 'cjh-newline-above)
-(define-key cjh-keymap "] " 'cjh-newline-below)
-(define-key cjh-keymap "O" 'cjh-open-newline-above)
+(define-key cjh-keymap "n" 'cjh-isearch-next)
 (define-key cjh-keymap "o" 'cjh-open-newline-below)
-(define-key cjh-keymap "I" 'cjh-insert-beginning-of-line)
+(define-key cjh-keymap "p" 'cjh-paste)
+;; q 'cjh-quit-search-mode
 (define-key cjh-keymap "r" 'cjh-replace-char)
-(define-key cjh-keymap "J" 'cjh-delete-indentation)
-;; TODO(chogan): Improve semantics of this
-(define-key cjh-keymap "." 'repeat)
-;; s/.../.../g
-;; " ry"
-
-;; Surround with ("[{
-;; Text Objects
-(define-key cjh-keymap "d" 'cjh-delete)
-(defun cjh-delete (beg end)
-  (interactive "r")
-  (if (use-region-p)
-      (kill-region beg end)
-    (let ((char (read-char)))
-      (cond
-       ((char-equal ?d char) (cjh-kill-line))
-       ((char-equal ?n char) (cjh-kill-line-leave-newline))
-       ((char-equal ?w char) (cjh-kill-word))
-       ;; ((char-equal ?W char) (cjh-kill-whitespace-forward))
-       ((char-equal ?l char) (delete-blank-lines))))))
-;; dW
-;; dia
-;; df...
-;; dt...
-(define-key cjh-keymap "y" 'cjh-yank)
-(defun cjh-yank (beg end)
-  (interactive "r")
-  (if (use-region-p)
-      (message "Saved %s to %s" beg end)
-      (kill-ring-save beg end)
-    (let ((char (read-char)))
-      (cond
-       ((char-equal ?y char) (cjh-copy-line))
-       ))))
-
-;; yw
-;; ye
-;; yiw
-;; yb
-(define-key cjh-keymap "cw" 'cjh-change-word)
-(define-key cjh-keymap "ciw" 'cjh-change-inner-word)
-(define-key cjh-keymap "C" 'cjh-change-to-eol)
-;; cW
-;; ce
-;; cE
-;; cia
-;; cf...
-;; ct...
-
-;; (fill-paragraph) M-q - After writing a long one line comment, format to fill line
-;; (fill-region) - Realign comment block to fill-column
-
-(define-key cjh-keymap " u" 'universal-argument)
-
-;; Visual Mode
+;; s 'cjh-search or 'cjh-substitute-replace
+;; TODO(chogan): Implement
+(define-key cjh-keymap "t" 'cjh-find-forward-till)
+(define-key cjh-keymap "u" 'undo)
 (define-key cjh-keymap "v" 'cjh-visual-state)
+(define-key cjh-keymap "w" 'forward-to-word)
+;; TODO(chogan): xp should swap chars
+(define-key cjh-keymap "x" 'cjh-forward-delete-char)
+(define-key cjh-keymap "y" 'cjh-yank)
+;; z
+
+(define-key cjh-keymap "A" 'cjh-eol-insert)
+(define-key cjh-keymap "B" 'cjh-backward-whitespace)
+(define-key cjh-keymap "C" 'cjh-change-to-eol)
+(define-key cjh-keymap "D" 'kill-line)
+;; E
+(define-key cjh-keymap "F" 'cjh-find-backward)
+(define-key cjh-keymap "G" 'end-of-buffer)
+;; H
+(define-key cjh-keymap "I" 'cjh-insert-beginning-of-line)
+(define-key cjh-keymap "J" 'cjh-delete-indentation)
+;; K
+;; L
+(define-key cjh-keymap "M" 'move-to-window-line-top-bottom)
+(define-key cjh-keymap "N" 'cjh-isearch-prev)
+(define-key cjh-keymap "O" 'cjh-open-newline-above)
+;; P
+;; Q
+;; R
+;; S
+;; TODO(chogan): Implement this
+(define-key cjh-keymap "T" 'cjh-find-backward-till)
+;; U
 ;; TODO(chogan): Not quite right
 (define-key cjh-keymap "V" 'cjh-start-visual-line-selection)
-;; C-v
-
-;; TODO(chogan):
-;; (defvar cjh-visual-state nil)
-
-(defun cjh-start-visual-line-selection ()
-  (interactive)
-  (beginning-of-line)
-  (call-interactively 'set-mark-command)
-  (end-of-line))
-
-(defun cjh-visual-state ()
-  (interactive)
-  (call-interactively 'set-mark-command))
-
-(defun cjh-paste ()
-  "Paste with special newline handling.
-
-If the text to paste ends with a newline, open a newline below
-the line at point and insert the line there."
-  (interactive)
-  (let ((to-paste (car kill-ring-yank-pointer)))
-    (if (string-match "\n$" to-paste)
-        (progn
-          (next-line)
-          (beginning-of-line)
-          (yank))
-      (yank))))
-
-;; Multi-cursor mode
-;; C-n
-;; Try Doom emacs multi-cursor package?
-
-;; Search
-;; TODO(chogan): Keep searched option after <RET>
-(defvar cjh-last-searched-string nil
-  "Stores the last searched string so that 'n' and 'N' can cycle through it.")
-
+(define-key cjh-keymap "W" 'cjh-forward-whitespace)
+(define-key cjh-keymap "X" 'cjh-backward-delete-char)
+;; Y
+;; Z
+;; ~
+;; `
+;; !
+;; @
+;; #
+(define-key cjh-keymap "$" 'cjh-move-to-end-of-line)
+;; %
+(define-key cjh-keymap "^" 'back-to-indentation)
+;; &
+;; *
+;; *e
+;; (
+;; )
+;; -
+;; _
+;; +
+;; =
+;; \
+;; |
+(define-key cjh-keymap ";" 'cjh-repeat-last-find)
+(define-key cjh-keymap "'" 'cjh-goto-mark)
+;; :
+;; "
+(define-key cjh-keymap "{" 'backward-paragraph)
+(define-key cjh-keymap "}" 'forward-paragraph)
+(define-key cjh-keymap "[ " 'cjh-newline-above)
+(define-key cjh-keymap "] " 'cjh-newline-below)
+;; <
+;; >
+;; ,
+;; TODO(chogan): Improve semantics of this
+(define-key cjh-keymap "." 'repeat)
+;; TODO(chogan): Keep searched option after <RET> so I can n and N
+;; through the results
 (define-key cjh-keymap "/" 'cjh-isearch-forward)
 (define-key cjh-keymap "?" 'cjh-isearch-backward)
-(define-key cjh-keymap "n" 'cjh-isearch-next)
-(define-key cjh-keymap "N" 'cjh-isearch-prev)
-;; *
-;; SPC /
+(define-key cjh-keymap "0" 'beginning-of-line)
 
-;; iedit mode
-;; * e
+;; C-n 'cjh-multi-cursor-add
+(define-key cjh-keymap (kbd "C-d") 'cjh-scroll-up-half)
+(define-key cjh-keymap (kbd "C-o") 'pop-to-mark-command)
+(define-key cjh-keymap (kbd "C-u") 'cjh-scroll-down-half)
+;; C-v
+(define-key cjh-keymap (kbd "C-;") 'cjh-insert-semicolon-at-eol)
 
-;; Compilation
-(define-key cjh-keymap " en" 'compilation-next-error-function)
+;; Global keymaps
+(global-set-key (kbd "C-;") 'cjh-insert-semicolon-at-eol)
+(global-set-key (kbd "M-h") 'backward-char)
+(global-set-key (kbd "M-l") 'forward-char)
 
+;;; SPC leader
 (define-key cjh-keymap "  " 'execute-extended-command)
-
-;;; File Commands
-(define-key cjh-keymap " ff" 'find-file)
-(define-key cjh-keymap " fF" 'find-file-other-window)
-(define-key cjh-keymap " fr" 'find-file-read-only)
-;; (define-key cjh-keymap " fR" 'cjh-rename-file)
-
-;;; Directories
-(setq list-directory-verbose-switches "-la")
-(define-key cjh-keymap " ls" 'list-directory)
-;; (define-key cjh-keymap " ll" 'cjh-list-directory)
-(define-key cjh-keymap " d" 'dired)
-
-;;; Buffer commands
+;; " a"
 (define-key cjh-keymap " bb" 'switch-to-buffer)
 (define-key cjh-keymap " bB" 'switch-to-buffer-other-window)
 (define-key cjh-keymap " bd" 'kill-buffer)
 (define-key cjh-keymap " bD" 'clean-buffer-list)
 (define-key cjh-keymap " bp" 'previous-buffer)
 (define-key cjh-keymap " bn" 'next-buffer)
-(defvar cjh-toggle-tab nil
-  "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
+;; " c"
+(define-key cjh-keymap " d" 'dired)
+(define-key cjh-keymap " en" 'compilation-next-error-function)
+(define-key cjh-keymap " ff" 'find-file)
+(define-key cjh-keymap " fF" 'find-file-other-window)
+(define-key cjh-keymap " fr" 'find-file-read-only)
+;; (define-key cjh-keymap " fR" 'cjh-rename-file)
+(define-key cjh-keymap " gg" 'goto-line)
+(define-key cjh-keymap " ha" 'apropos-command)
+(define-key cjh-keymap " hb" 'describe-bindings)
+(define-key cjh-keymap " hc" 'describe-key-briefly)
+(define-key cjh-keymap " hd" 'apropos-documentation)
+(define-key cjh-keymap " hf" 'describe-function)
+(define-key cjh-keymap " hi" 'info)
+(define-key cjh-keymap " hk" 'describe-key)
+(define-key cjh-keymap " hm" 'describe-mode)
+(define-key cjh-keymap " ho" 'describe-symbol)
+(define-key cjh-keymap " hr" 'info-emacs-manual)
+(define-key cjh-keymap " hv" 'describe-variable)
+(define-key cjh-keymap " hw" 'where-is)
+(define-key cjh-keymap " h?" 'help-for-help)
+(define-key cjh-keymap " hF" 'Info-goto-emacs-command-node)
+(define-key cjh-keymap " hK" 'Info-goto-emacs-key-command-node)
+(define-key cjh-keymap " hP" 'describe-package)
+(define-key cjh-keymap " hS" 'info-lookup-symbol)
+;; " i"
+;; " j"
+;; " k"
+(setq list-directory-verbose-switches "-la")
+;; (define-key cjh-keymap " ll" 'cjh-list-directory)
+(define-key cjh-keymap " ls" 'list-directory)
+;; " m"
+;; " n"
+;; " o"
+;; " p"
+(define-key cjh-keymap " q" 'save-buffers-kill-terminal)
+(define-key cjh-keymap " r" 'cjh-reload-init-file)
+;; " ry"
+;; " s"
+;; s/.../.../g
+(define-key cjh-keymap " tn" 'linum-mode)
+(define-key cjh-keymap " tw" 'whitespace-mode)
+(define-key cjh-keymap " u" 'universal-argument)
+;; " v"
+(define-key cjh-keymap " wd" 'delete-window)
+(define-key cjh-keymap " wh" 'other-window)
+(define-key cjh-keymap " wl" 'other-window)
+(define-key cjh-keymap " w/" 'split-window-right)
+;; " x"
+;; " y"
+;; " z"
+;; " /" project wide search
 (define-key cjh-keymap " \t" 'cjh-toggle-prev-buffer)
 
+;; TODO(chogan): Surround with ("[{'
 
-;;; Window commands
-(define-key cjh-keymap " wl" 'other-window)
-(define-key cjh-keymap " wh" 'other-window)
-(define-key cjh-keymap " w/" 'split-window-right)
-(define-key cjh-keymap " wd" 'delete-window)
-
-;;; Custom Bindings
+;;; , leader
 (define-key cjh-keymap ",b" 'compile)
 (define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
+;; Align comments to fill-column
+(define-key cjh-keymap ",f" 'fill-paragraph)
 (define-key cjh-keymap ",gb" 'c-beginning-of-defun)
 (define-key cjh-keymap ",ge" 'c-end-of-defun)
 (define-key cjh-keymap ",mf" 'mark-defun)
@@ -318,31 +313,6 @@ the line at point and insert the line there."
 (define-key cjh-keymap ",si" 'cjh-wrap-region-in-if)
 (define-key cjh-keymap ",t" 'cjh-insert-todo)
 (define-key cjh-keymap ",w" 'save-buffer)
-(define-key cjh-keymap (kbd "C-;") 'cjh-insert-semicolon-at-eol)
-
-(global-set-key (kbd "C-;") 'cjh-insert-semicolon-at-eol)
-
-;;; Help
-(define-key cjh-keymap " hf" 'describe-function)
-(define-key cjh-keymap " hv" 'describe-variable)
-(define-key cjh-keymap " hm" 'describe-mode)
-(define-key cjh-keymap " hc" 'describe-key-briefly)
-(define-key cjh-keymap " ha" 'apropos-command)
-(define-key cjh-keymap " hb" 'describe-bindings)
-(define-key cjh-keymap " hd" 'apropos-documentation)
-(define-key cjh-keymap " hF" 'Info-goto-emacs-command-node)
-(define-key cjh-keymap " hi" 'info)
-(define-key cjh-keymap " hk" 'describe-key)
-(define-key cjh-keymap " hK" 'Info-goto-emacs-key-command-node)
-(define-key cjh-keymap " ho" 'describe-symbol)
-(define-key cjh-keymap " hr" 'info-emacs-manual)
-(define-key cjh-keymap " hS" 'info-lookup-symbol)
-(define-key cjh-keymap " hw" 'where-is)
-(define-key cjh-keymap " h?" 'help-for-help)
-
-;;; Visuals
-(define-key cjh-keymap " tn" 'linum-mode)
-(define-key cjh-keymap " tw" 'whitespace-mode)
 
 ;;; org-mode key bindings
 ;; schedule
@@ -351,7 +321,7 @@ the line at point and insert the line there."
 ;; clock out
 ;; t
 
-;; From Casey
+;;; Theme
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
 (set-face-attribute 'default t :font "Liberation Mono-11.5")
 
@@ -478,7 +448,7 @@ the line at point and insert the line there."
 
     `(highlight-symbol-face ((,class (:background ,bg2))))
 
-    ;;;;; show-paren
+    ;; show-paren
     `(show-paren-match ((,class (:foreground ,mat :inherit bold))))
     `(show-paren-match-expression ((,class (:background ,green-bg-s))))
     `(show-paren-mismatch ((,class (:foreground ,err :inherit bold)))))
@@ -546,6 +516,10 @@ the line at point and insert the line there."
 (defun cjh-kill-word ()
   (interactive)
   (kill-word 1))
+
+;; TODO(chogan):
+;; (defun cjh-kill-to-end-of-word ()
+;;   (interactive))
 
 (defun cjh-kill-line ()
   (interactive)
@@ -662,9 +636,9 @@ the line at point and insert the line there."
   (back-to-indentation)
   (cjh-insert-state))
 
-;; TODO(chogan): Enable multiple consecutive uses
 (defun cjh-end-of-word ()
   (interactive)
+  (forward-char)
   (forward-word)
   (backward-char))
 
@@ -672,10 +646,9 @@ the line at point and insert the line there."
 (defvar cjh-last-end-of-find-point nil)
 (defvar cjh-last-find-direction nil)
 
-;; TODO(chogan): Don't require pressing enter
 (defun cjh-find-forward ()
   (interactive)
-  (let ((char (read-string "Find char: "))
+  (let ((char (char-to-string (read-char)))
         (end-of-find-point (save-excursion (end-of-line) (point))))
     (if (search-forward char end-of-find-point t)
         (progn
@@ -700,10 +673,9 @@ the line at point and insert the line there."
   (interactive)
   (search-backward cjh-last-find-char cjh-last-end-of-find-point t))
 
-;; TODO(chogan): Don't require pressing enter
 (defun cjh-find-backward ()
   (interactive)
-  (let ((char (read-string "Find char: "))
+  (let ((char (char-to-string (read-char)))
         (end-of-find-point (save-excursion (beginning-of-line) (point))))
     (if (search-backward char end-of-find-point t)
         (progn
@@ -829,10 +801,119 @@ the line at point and insert the line there."
    nil
    '((cjh-c-mode-font-lock-if0 (0 font-lock-comment-face prepend))) 'add-to-end))
 
+(defun cjh-paste ()
+  "Paste with special newline handling.
+
+If the text to paste ends with a newline, open a newline below
+the line at point and insert the line there."
+  (interactive)
+  (let ((to-paste (car kill-ring-yank-pointer)))
+    (if (string-match "\n$" to-paste)
+        (progn
+          (next-line)
+          (beginning-of-line)
+          (yank))
+      (yank))))
+
+(defun cjh-delete (beg end)
+  (interactive "r")
+  (if (use-region-p)
+      (kill-region beg end)
+    (let ((char (read-char)))
+      (cond
+       ((char-equal ?d char) (cjh-kill-line))
+       ((char-equal ?n char) (cjh-kill-line-leave-newline))
+       ((char-equal ?w char) (cjh-kill-word))
+       ;; TODO(chogan):
+       ;; ((char-equal ?e char) (cjh-kill-to-end-of-word))
+       ;; ((char-equal ?W char) (cjh-kill-whitespace-forward))
+       ;; ((char-equal ?i char)
+       ;;  (cond
+       ;;   ((char-equal ?a char) ()
+       ;;    )))
+       ((char-equal ?l char) (delete-blank-lines))
+       ((char-equal ?f char)
+        (let ((second-char (read-char)))
+          (zap-to-char 1 second-char)))
+       ((char-equal ?t char)
+        (let ((second-char (read-char)))
+          (zap-up-to-char 1 second-char)))))))
+
+(defun cjh-change ()
+  (interactive)
+  (let ((char (read-char)))
+    (cond
+     ((char-equal ?w char) (cjh-change-word))
+     ;; TODO(chogan):
+     ;; ((char-euqal ?W char) ())
+     ;; ((char-euqal ?e char) ())
+     ;; ((char-euqal ?E char) ())
+     ((char-equal ?f char)
+      (let ((second-char (read-char)))
+        (zap-to-char 1 second-char)
+        (cjh-insert-state)))
+     ((char-equal ?t char)
+      (let ((second-char (read-char)))
+        (zap-up-to-char 1 second-char)
+        (cjh-insert-state)))
+     ((char-equal ?i char)
+      (let ((second-char (read-char)))
+        (cond
+         ((char-equal ?w second-char) (cjh-change-inner-word))
+         ;; TODO(chogan):
+         ;; ((char-equal ?a second-char) ())
+         )))
+     )))
+
+(defun cjh-yank ()
+  (interactive)
+  (if (use-region-p)
+      (call-interactively 'kill-ring-save)
+    (let ((char (read-char)))
+      (cond
+       ((char-equal ?y char) (cjh-copy-line))
+       ;; TODO(chogan):
+       ;; ((char-equal ?w char) ())
+       ;; ((char-equal ?e char) ())
+       ;; ((char-equal ?b char) ())
+       ((char-equal ?f char)
+        (let ((second-char (read-char)))
+          (zap-to-char 1 second-char)
+          (yank)))
+       ((char-equal ?t char)
+        (let ((second-char (read-char)))
+          (zap-up-to-char 1 second-char)
+          (yank)))
+       ((char-equal ?i char)
+        (let ((second-char (read-char)))
+          (cond
+           ;; TODO(chogan):
+           ;; ((char-equal ?w char) (cjh-copy-word))
+           )))
+       ))))
+
 (defun cjh-quit-help ()
   (interactive)
   (cjh-normal-state)
   (quit-window))
+
+(defun cjh-start-visual-line-selection ()
+  (interactive)
+  (beginning-of-line)
+  (call-interactively 'set-mark-command)
+  (end-of-line))
+
+(defun cjh-visual-state ()
+  (interactive)
+  (call-interactively 'set-mark-command))
+
+(defun cjh-use-org-keymap ()
+  (interactive)
+  (setq-local overriding-local-keymap 'cjh-org-keymap))
+
+;; TODO(chogan):
+(defun cjh-copy-word ()
+  (interactive))
 
 (defun enable-cjh-mode ()
   (cjh-mode 1))
@@ -844,15 +925,16 @@ the line at point and insert the line there."
 ;; Comment out #if 0 blocks
 (add-hook 'c-mode-common-hook 'cjh-c-mode-common-hook)
 ;; Don't indent when inside a namespace
-(add-hook 'c++-mode-hook #'(lambda () (c-set-offset 'innamespace [0])))
+(add-hook 'c++-mode-hook (lambda () (c-set-offset 'innamespace [0])))
 ;; Include underscores in word
-(add-hook 'python-mode-hook #'(lambda () (modify-syntax-entry ?_ "w")))
-(add-hook 'c-mode-common-hook #'(lambda () (modify-syntax-entry ?_ "w")))
+(add-hook 'python-mode-hook (lambda () (modify-syntax-entry ?_ "w")))
+(add-hook 'c-mode-common-hook (lambda () (modify-syntax-entry ?_ "w")))
 (add-hook 'help-mode-hook 'cjh-set-help-cursor)
 (add-hook 'help-mode-hook (lambda () (local-set-key "q" 'cjh-quit-help)))
 ;; (add-hook 'isearch-mode-end-hook (lambda () (setq cjh-isearch-state nil)))
 (add-hook 'prog-mode-hook 'enable-cjh-mode)
 (add-hook 'org-mode-hook 'enable-cjh-mode)
+(add-hook 'org-mode-hook 'cjh-use-org-keymap)
 (add-hook 'messages-buffer-mode-hook 'enable-cjh-mode)
 
 (custom-set-variables
@@ -863,10 +945,7 @@ the line at point and insert the line there."
  '(c-default-style
    (quote
     ((c-mode . "linux")
-     (c++-mode . "linux")
-     (java-mode . "java")
-     (awk-mode . "awk")
-     (other . "linux")))))
+     (c++-mode . "linux")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
