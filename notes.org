@@ -1,47 +1,26 @@
 #+STARTUP: showeverything
-
-* TODO What does this look like?
-
+* heading
 ** Features
-*** TODO Motion Objects?
 *** TODO Visual Mode
 *** TODO Layouts
 *** TODO Custom theme?
-*** TODO Mode bar
 *** TODO Pretty org-mode
-*** TODO Return to last position
 *** TODO '.' for repeating last command
 *** TODO Search
 *** TODO Completion
-
-** Bugs
-*** TODO Incremental search is pretty broken
+**** TODO Stuff
 
 ** Functionality
-   - (repeat), ~c-x z~
-     - Repeat previous command
-     - keep hittig ~z~ to keep repeating
    - (repeat-complex-command)
      - Re-execute a recent minibuffer command from the ~command-history~
-   - (kill-ring-save)
-   - (zap-to-char)
-     - Like ~df<char>~
-   - (point-to-register r)
-     - Save =point= in register /r/
-   - (jump-to-register r)
-   - (copy-to-register r)
-     - Save region in register /r/
-   - (insert-register r)
-     - Paste text from register /r/
    - (hi-lock-mode)
      - Highlight search results, etc.
    - (isearch-ring-advance)
    - (isearch-ring-retreat)
-   - (icomplete-mode)
-     - Fast buffer completion
 
 #+begin_src elisp
 (ido-mode 1)
 (setq ido-everywhere t)
 (setq ido-enable-flex-matching t)
+(icomplete-mode 1)
 #+end_src
