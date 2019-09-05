@@ -51,6 +51,9 @@
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
+(ido-mode 1)
+(setq ido-everywhere t)
+(setq ido-enable-flex-matching t)
 
 (defvar cjh-toggle-tab nil
   "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
@@ -248,9 +251,9 @@
 ;; " c"
 (define-key cjh-keymap " d" 'dired)
 (define-key cjh-keymap " en" 'compilation-next-error-function)
-(define-key cjh-keymap " ff" 'find-file)
-(define-key cjh-keymap " fF" 'find-file-other-window)
-(define-key cjh-keymap " fr" 'find-file-read-only)
+(define-key cjh-keymap " ff" 'ido-find-file)
+(define-key cjh-keymap " fF" 'ido-find-file-other-window)
+(define-key cjh-keymap " fr" 'ido-find-file-read-only)
 ;; (define-key cjh-keymap " fR" 'cjh-rename-file)
 (define-key cjh-keymap " gg" 'goto-line)
 (define-key cjh-keymap " ha" 'apropos-command)
