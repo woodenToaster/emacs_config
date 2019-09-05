@@ -1,5 +1,6 @@
 #+STARTUP: showeverything
-* heading
+
+* Heading
 ** Features
 *** TODO Visual Mode
 *** TODO Layouts
@@ -8,7 +9,6 @@
 *** TODO '.' for repeating last command
 *** TODO Search
 *** TODO Completion
-**** TODO Stuff
 
 ** Functionality
    - (repeat-complex-command)

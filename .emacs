@@ -355,10 +355,6 @@
 (add-hook 'prog-mode-hook 'hexcolour-add-to-font-lock)
 ;;
 
-;; (add-to-list 'custom-theme-load-path "C:/Users/Chris/.emacs.d/cjh")
-(add-to-list 'custom-theme-load-path "~/.emacs.d/cjh")
-(load-theme 'cjh-theme t)
-
 ;;; Functions
 ;; (defun cjh-rename-file ()
 ;;   (interactive)
@@ -783,6 +779,26 @@ the line at point and insert the line there."
   (interactive)
   (setq-local overriding-local-keymap 'cjh-org-keymap))
 
+(defun cjh-init-org ()
+  (enable-cjh-mode)
+  (cjh-use-org-keymap)
+  (setq org-hide-emphasis-markers t)
+  (setq org-hide-leading-stars t)
+  ;; NOTE(chogan): These don't take effect when set in cjh-theme.el
+  (set-face-attribute 'outline-1 nil :height 1.4 :foreground "#4f97d7")
+  (set-face-attribute 'outline-2 nil :height 1.3 :foreground "#2d9574")
+  (set-face-attribute 'outline-3 nil :height 1.2 :foreground "#67b11d")
+  (set-face-attribute 'outline-4 nil :height 1.1 :foreground "#b1951d")
+  (set-face-attribute 'outline-5 nil :height 1.0 :foreground "#4f97d7")
+  (set-face-attribute 'outline-6 nil :height 1.0 :foreground "#2d9574")
+  (set-face-attribute 'outline-7 nil :height 1.0 :foreground "#67b11d")
+  (set-face-attribute 'outline-8 nil :height 1.0 :foreground "#b1951d")
+  (set-face-attribute 'org-block nil :background "#2f2b33" :foreground "#cbc1d5")
+  (set-face-attribute 'org-meta-line :foreground "#9f8766")
+  (set-face-attribute 'org-block-begin-line :background "#373040" :foreground "#827591")
+  (set-face-attribute 'org-block-end-line :background "#373040" :foreground "#827591")
+  (set-face-attribute 'org-code :foreground "#28def0"))
+
 ;; TODO(chogan):
 (defun cjh-copy-word ()
   (interactive))
@@ -805,9 +821,11 @@ the line at point and insert the line there."
 (add-hook 'help-mode-hook (lambda () (local-set-key "q" 'cjh-quit-help)))
 ;; (add-hook 'isearch-mode-end-hook (lambda () (setq cjh-isearch-state nil)))
 (add-hook 'prog-mode-hook 'enable-cjh-mode)
-(add-hook 'org-mode-hook 'enable-cjh-mode)
-(add-hook 'org-mode-hook 'cjh-use-org-keymap)
+(add-hook 'org-mode-hook 'cjh-init-org)
 (add-hook 'messages-buffer-mode-hook 'enable-cjh-mode)
+
+(add-to-list 'custom-theme-load-path "~/.emacs.d/cjh")
+(load-theme 'cjh-theme t)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -820,7 +838,4 @@ the line at point and insert the line there."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(outline-1 ((t (:inherit font-lock-function-name-face :height 1.4))))
- '(outline-2 ((t (:inherit font-lock-variable-name-face :height 1.3))))
- '(outline-3 ((t (:inherit font-lock-keyword-face :height 1.2))))
- '(outline-4 ((t (:inherit font-lock-keyword-face :height 1.1)))))
+)
