@@ -17,7 +17,7 @@
 ;;     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
-;; forward-to-word, backward-to-word for vi-like w, e
+;; forward-to-word, backward-to-word for vi-like w, e, zap-up-to-char for dt
 (require 'misc)
 
 ;;; Defaults
@@ -319,12 +319,6 @@
 (define-key cjh-keymap ",t" 'cjh-insert-todo)
 (define-key cjh-keymap ",w" 'save-buffer)
 
-;;; org-mode key bindings
-;; schedule
-;; report
-;; clock in
-;; clock out
-;; t
 
 ;;; Theme
 (add-to-list 'default-frame-alist '(font . "Liberation Mono-11.5"))
@@ -780,11 +774,9 @@ the line at point and insert the line there."
 
 (defun cjh-use-org-keymap ()
   (interactive)
-  (setq-local overriding-local-keymap 'cjh-org-keymap))
+  (setq-local overriding-local-map 'cjh-org-keymap))
 
-(defun cjh-init-org ()
-  (enable-cjh-mode)
-  (cjh-use-org-keymap)
+(with-eval-after-load "org"
   (setq org-hide-emphasis-markers t)
   (setq org-hide-leading-stars t)
   ;; NOTE(chogan): These don't take effect when set in cjh-theme.el
@@ -797,10 +789,21 @@ the line at point and insert the line there."
   (set-face-attribute 'outline-7 nil :height 1.0 :foreground "#67b11d")
   (set-face-attribute 'outline-8 nil :height 1.0 :foreground "#b1951d")
   (set-face-attribute 'org-block nil :background "#2f2b33" :foreground "#cbc1d5")
-  (set-face-attribute 'org-meta-line :foreground "#9f8766")
-  (set-face-attribute 'org-block-begin-line :background "#373040" :foreground "#827591")
-  (set-face-attribute 'org-block-end-line :background "#373040" :foreground "#827591")
-  (set-face-attribute 'org-code :foreground "#28def0"))
+  (set-face-attribute 'org-meta-line nil :foreground "#9f8766")
+  (set-face-attribute 'org-block-begin-line nil :background "#373040" :foreground "#827591")
+  (set-face-attribute 'org-block-end-line nil :background "#373040" :foreground "#827591")
+  (set-face-attribute 'org-code nil :foreground "#28def0")
+  (define-key cjh-org-keymap " ma" 'org-agenda)
+  (define-key cjh-org-keymap " ms" 'org-schedule)
+  (define-key cjh-org-keymap " mr" 'org-clock-report)
+  (define-key cjh-org-keymap " mI" 'org-clock-in)
+  (define-key cjh-org-keymap " mO" 'org-clock-out)
+  (define-key cjh-org-keymap " mb" 'org-insert-structure-template)
+  (define-key cjh-org-keymap "t" 'org-todo))
+
+(defun cjh-init-org ()
+  (enable-cjh-mode)
+  (cjh-use-org-keymap))
 
 ;; TODO(chogan):
 (defun cjh-copy-word ()
