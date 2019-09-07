@@ -117,16 +117,7 @@
     ;; show-paren
     `(show-paren-match ((,class (:foreground ,mat :inherit bold))))
     `(show-paren-match-expression ((,class (:background ,green-bg-s))))
-    `(show-paren-mismatch ((,class (:foreground ,err :inherit bold)))))
-
-    (custom-theme-set-variables
-     theme-name
-
-     ;; NOTE(chogan): Requires hl-todo package
-     `(hl-todo-keyword-faces '(("TODO" . ,war)
-                               ("NOTE" . ,yellow)
-                               ("FIXME" . ,war))))
-    ))
+    `(show-paren-mismatch ((,class (:foreground ,err :inherit bold)))))))
 
 (cjh-create-theme 'cjh-theme)
 (provide-theme 'cjh-theme)

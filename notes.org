@@ -1,19 +1,12 @@
 #+STARTUP: showeverything
 
-* Heading
-** Features
-*** TODO Visual Mode
-*** TODO Layouts
-*** TODO Custom theme?
-*** TODO Pretty org-mode
-*** TODO '.' for repeating last command
-*** TODO Search
-*** TODO Completion
+* Features
+** TODO Layouts
+** TODO '.' for repeating last command
+** TODO file search
+** TODO project search
+** TODO Completion
+** TODO Highlight matching ([{'"
 
-** Functionality
-   - (repeat-complex-command)
-     - Re-execute a recent minibuffer command from the ~command-history~
-   - (hi-lock-mode)
-     - Highlight search results, etc.
-   - (isearch-ring-advance)
-   - (isearch-ring-retreat)
+* Bugs
+** TODO visual line selection mode doesn't work quite right

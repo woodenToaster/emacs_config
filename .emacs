@@ -71,10 +71,10 @@
 ;; TODO(chogan): cjh-mode makes its own map: cjh-mode-map.
 ;; Do I need to create a custom one?
 (defvar cjh-keymap (make-sparse-keymap))
-(defvar cjh-org-keymap
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map cjh-keymap)
-    map))
+;; (defvar cjh-org-keymap
+;;   (let ((map (make-sparse-keymap)))
+;;     (set-keymap-parent map cjh-keymap)
+;;     map))
 
 (defun cjh-insert-state ()
   (interactive)
@@ -136,6 +136,7 @@
 (define-key cjh-keymap "d" 'cjh-delete)
 (define-key cjh-keymap "e" 'cjh-end-of-word)
 (define-key cjh-keymap "f" 'cjh-find-forward)
+(define-key cjh-keymap "gc" 'cjh-comment-region)
 (define-key cjh-keymap "gd" 'xref-find-definitions)
 (define-key cjh-keymap "ge" 'backward-to-word)
 (define-key cjh-keymap "gg" 'beginning-of-buffer)
@@ -218,7 +219,6 @@
 (define-key cjh-keymap "] " 'cjh-newline-below)
 ;; <
 ;; >
-;; ,
 ;; TODO(chogan): Improve semantics of this
 (define-key cjh-keymap "." 'repeat)
 ;; TODO(chogan): Keep searched option after <RET> so I can n and N
@@ -307,7 +307,8 @@
 ;;; , leader
 (define-key cjh-keymap ",b" 'compile)
 (define-key cjh-keymap ",c" 'cjh-insert-if0-comment)
-;; Align comments to fill-column
+;; Align comments to fill-column. This requires the comment block to
+;; be separated by spaces
 (define-key cjh-keymap ",f" 'fill-paragraph)
 (define-key cjh-keymap ",gb" 'c-beginning-of-defun)
 (define-key cjh-keymap ",ge" 'c-end-of-defun)
@@ -338,19 +339,17 @@
 (defun cjh-set-help-cursor ()
   (set-cursor-color (if (true-color-p) "#87ceeb" "#00ccff")))
 
-
 ;; Display hex string in color it specifies
 ;; emacswiki.org/emacs/Hexcolour
-(defvar hexcolour-keywords
-   '(("#[abcdef[:digit:]]\\{6\\}"
-      (0 (put-text-property (match-beginning 0)
-                            (match-end 0)
-			    'face (list :background
-                            (match-string-no-properties 0)))))))
-(defun hexcolour-add-to-font-lock ()
-  (font-lock-add-keywords nil hexcolour-keywords))
-(add-hook 'prog-mode-hook 'hexcolour-add-to-font-lock)
-;;
+;; (defvar hexcolour-keywords
+;;    '(("#[abcdef[:digit:]]\\{6\\}"
+;;       (0 (put-text-property (match-beginning 0)
+;;                             (match-end 0)
+;; 			    'face (list :background
+;;                             (match-string-no-properties 0)))))))
+;; (defun hexcolour-add-to-font-lock ()
+;;   (font-lock-add-keywords nil hexcolour-keywords))
+;; (add-hook 'prog-mode-hook 'hexcolour-add-to-font-lock)
 
 ;;; Functions
 ;; (defun cjh-rename-file ()
@@ -358,6 +357,15 @@
 ;;   (let ((this-file (buffer-file-name)))
 ;;     ;; TODO(chogan): Prompt for file name and append to path dir of this-file
 ;;     (rename-file this-file (read-string ...))))
+
+(defun cjh-comment-region (start end)
+  "Uncomment region if first character in region is comment"
+  (interactive "r")
+  (let ((first-char (buffer-substring-no-properties start (+ start 1))))
+    (if (eq (aref first-char 0) (aref comment-start 0))
+        ;; '(4) represents the raw prefix argument, meaning uncomment region
+        (comment-region start end '(4))
+      (comment-region start end))))
 
 (defun cjh-toggle-prev-buffer ()
   (interactive)
@@ -772,18 +780,30 @@ the line at point and insert the line there."
   (interactive)
   (call-interactively 'set-mark-command))
 
-(defun cjh-use-org-keymap ()
-  (interactive)
-  (setq-local overriding-local-map 'cjh-org-keymap))
+(defun cjh-define-org-bindings ()
+  (define-key cjh-keymap " ma" 'org-agenda)
+  (define-key cjh-keymap " ms" 'org-schedule)
+  (define-key cjh-keymap " mr" 'org-clock-report)
+  (define-key cjh-keymap " mI" 'org-clock-in)
+  (define-key cjh-keymap " mO" 'org-clock-out)
+  (define-key cjh-keymap " mb" 'org-insert-structure-template)
+  (define-key cjh-keymap "t" 'org-todo)
+  (define-key cjh-keymap (kbd "M-h") 'org-do-promote)
+  (define-key cjh-keymap (kbd "M-j") 'org-move-subtree-down)
+  (define-key cjh-keymap (kbd "M-k") 'org-move-subtree-up)
+  (define-key cjh-keymap (kbd "M-l") 'org-do-demote)
+  (define-key cjh-keymap (kbd "M-H") 'org-promote-subtree)
+  (define-key cjh-keymap (kbd "M-L") 'org-demote-subtree)
+  )
 
 (with-eval-after-load "org"
   (setq org-hide-emphasis-markers t)
   (setq org-hide-leading-stars t)
   ;; NOTE(chogan): These don't take effect when set in cjh-theme.el
-  (set-face-attribute 'outline-1 nil :height 1.4 :foreground "#4f97d7")
-  (set-face-attribute 'outline-2 nil :height 1.3 :foreground "#2d9574")
-  (set-face-attribute 'outline-3 nil :height 1.2 :foreground "#67b11d")
-  (set-face-attribute 'outline-4 nil :height 1.1 :foreground "#b1951d")
+  (set-face-attribute 'outline-1 nil :height 1.3 :foreground "#4f97d7")
+  (set-face-attribute 'outline-2 nil :bold t :height 1.2 :foreground "#2d9574")
+  (set-face-attribute 'outline-3 nil :height 1.1 :foreground "#67b11d")
+  (set-face-attribute 'outline-4 nil :height 1.0 :foreground "#b1951d")
   (set-face-attribute 'outline-5 nil :height 1.0 :foreground "#4f97d7")
   (set-face-attribute 'outline-6 nil :height 1.0 :foreground "#2d9574")
   (set-face-attribute 'outline-7 nil :height 1.0 :foreground "#67b11d")
@@ -792,18 +812,26 @@ the line at point and insert the line there."
   (set-face-attribute 'org-meta-line nil :foreground "#9f8766")
   (set-face-attribute 'org-block-begin-line nil :background "#373040" :foreground "#827591")
   (set-face-attribute 'org-block-end-line nil :background "#373040" :foreground "#827591")
-  (set-face-attribute 'org-code nil :foreground "#28def0")
-  (define-key cjh-org-keymap " ma" 'org-agenda)
-  (define-key cjh-org-keymap " ms" 'org-schedule)
-  (define-key cjh-org-keymap " mr" 'org-clock-report)
-  (define-key cjh-org-keymap " mI" 'org-clock-in)
-  (define-key cjh-org-keymap " mO" 'org-clock-out)
-  (define-key cjh-org-keymap " mb" 'org-insert-structure-template)
-  (define-key cjh-org-keymap "t" 'org-todo))
+  (set-face-attribute 'org-code nil :foreground "#28def0"))
 
 (defun cjh-init-org ()
   (enable-cjh-mode)
-  (cjh-use-org-keymap))
+  (cjh-define-org-bindings))
+
+(defface cjh-todo-face '((t :bold t :foreground "#cc9393"))
+  "Face for highlighting TODO, NOTE, etc.")
+
+(defvar cjh-todo 'cjh-todo-face)
+
+(defvar cjh-todo-keywords
+  '(("TODO" 0 cjh-todo t)
+    ("NOTE" 0 cjh-todo t)
+    ("FIXME" 0 cjh-todo t))
+  "Keywords to highlight with cjh-hl-todo")
+
+(defun cjh-hl-todo ()
+  (font-lock-add-keywords nil cjh-todo-keywords)
+  (font-lock-fontify-buffer))
 
 ;; TODO(chogan):
 (defun cjh-copy-word ()
@@ -829,9 +857,18 @@ the line at point and insert the line there."
 (add-hook 'prog-mode-hook 'enable-cjh-mode)
 (add-hook 'org-mode-hook 'cjh-init-org)
 (add-hook 'messages-buffer-mode-hook 'enable-cjh-mode)
-
 (add-to-list 'custom-theme-load-path "~/.emacs.d/cjh")
 (load-theme 'cjh-theme t)
+(add-hook 'prog-mode-hook 'cjh-hl-todo)
+
+;; Without this, unicode characters in view in a buffer greatly
+;; decreases performance on Windows
+(if (string-equal system-type "windows-nt")
+    (setq inhibit-compacting-font-caches t))
+
+;; (add-to-list 'load-path "~/.emacs.d/cjh")
+;; (require 'org-bullets)
+;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
