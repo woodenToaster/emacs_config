@@ -54,6 +54,8 @@
 (ido-mode 1)
 (setq ido-everywhere t)
 (setq ido-enable-flex-matching t)
+(show-paren-mode 1)
+(setq show-paren-when-point-inside-paren t)
 
 (defvar cjh-toggle-tab nil
   "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
@@ -196,7 +198,7 @@
 ;; @
 ;; #
 (define-key cjh-keymap "$" 'cjh-move-to-end-of-line)
-;; %
+(define-key cjh-keymap "%" 'cjh-matching-paren)
 (define-key cjh-keymap "^" 'back-to-indentation)
 ;; &
 (define-key cjh-keymap "*" 'isearch-forward-symbol-at-point)
@@ -357,6 +359,17 @@
 ;;   (let ((this-file (buffer-file-name)))
 ;;     ;; TODO(chogan): Prompt for file name and append to path dir of this-file
 ;;     (rename-file this-file (read-string ...))))
+
+(defun cjh-matching-paren ()
+  "Move point to matching paren, brace, or bracket.
+
+If point is not on a paren, brace, or bracket move point back to
+the previous one."
+  (interactive)
+  (cond
+   ((looking-at "\\((\\|\\[\\|{\\)") (forward-list 1) (backward-char 1))
+   ((looking-at "\\()\\|\\]\\|}\\)") (forward-char 1) (backward-list 1))
+   (t (re-search-backward "\\((\\|\\[\\|{\\)"))))
 
 (defun cjh-comment-region (start end)
   "Uncomment region if first character in region is comment"
@@ -794,6 +807,13 @@ the line at point and insert the line there."
   (define-key cjh-keymap (kbd "M-l") 'org-do-demote)
   (define-key cjh-keymap (kbd "M-H") 'org-promote-subtree)
   (define-key cjh-keymap (kbd "M-L") 'org-demote-subtree)
+  ;; 'org-next-visible-heading
+  ;; 'org-previous-visible-heading
+  ;; 'org-forward-same-level
+  ;; 'org-backward-same-level
+  ;; 'outline-up-heading
+  ;; default clock table settings :scope file :depth 6
+  ;; org-capture?
   )
 
 (with-eval-after-load "org"
