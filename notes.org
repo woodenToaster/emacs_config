@@ -3,10 +3,11 @@
 * Features
 ** TODO Layouts
 ** TODO '.' for repeating last command
-** TODO file search
 ** TODO project search
 ** TODO Completion
 ** TODO Highlight matching ([{'"
+** TODO cjh-help-mode
 
 * Bugs
 ** TODO visual line selection mode doesn't work quite right
+** TODO org-mode keybinding for 't' is sometimes not active

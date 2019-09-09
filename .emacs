@@ -54,7 +54,9 @@
 (ido-mode 1)
 (setq ido-everywhere t)
 (setq ido-enable-flex-matching t)
+;; Highlight matching paren
 (show-paren-mode 1)
+;; Highlight matching paren when point is on closing paren
 (setq show-paren-when-point-inside-paren t)
 
 (defvar cjh-toggle-tab nil
@@ -65,18 +67,16 @@
 
 (defvar cjh-mode-exclusion-list '()
   "Major modes that shouldn't enable cjh-mode")
-(setq cjh-mode-exclusion-list '(help-mode info-mode))
+(setq cjh-mode-exclusion-list '(help-mode Info-mode))
 
 (defvar cjh-command-state t
   "t when in normal mode, nil when in insert mode")
 
-;; TODO(chogan): cjh-mode makes its own map: cjh-mode-map.
-;; Do I need to create a custom one?
-(defvar cjh-keymap (make-sparse-keymap))
-;; (defvar cjh-org-keymap
-;;   (let ((map (make-sparse-keymap)))
-;;     (set-keymap-parent map cjh-keymap)
-;;     map))
+(defvar cjh-keymap (make-sparse-keymap)
+  "Keymap for cjh-mode")
+
+(defvar cjh-last-isearch-string nil
+  "The last string searched for with '/' (isearch-forward) or '?' (isearch-backward)")
 
 (defun cjh-insert-state ()
   (interactive)
@@ -106,7 +106,7 @@
 (setq cjh-escape-timer-is-live nil)
 
 ;; 'fd' to go from insert to normal mode
-;; TODO(chogan): minor mode for this?
+;; TODO(chogan): Should this be a minor mode?
 (add-hook 'pre-command-hook 'cjh-escape-pre-command-hook)
 
 (defun cjh-disable-escape-timer ()
@@ -151,9 +151,9 @@
 (define-key cjh-keymap "n" 'cjh-isearch-next)
 (define-key cjh-keymap "o" 'cjh-open-newline-below)
 (define-key cjh-keymap "p" 'cjh-paste)
-;; q 'cjh-quit-search-mode
+(define-key cjh-keymap "q" 'cjh-quit-isearch-highlight)
 (define-key cjh-keymap "r" 'cjh-replace-char)
-;; s 'cjh-search or 'cjh-substitute-replace
+(define-key cjh-keymap "s" 'kmacro-start-macro-or-insert-counter)
 ;; TODO(chogan): Implement
 (define-key cjh-keymap "t" 'cjh-find-forward-till)
 (define-key cjh-keymap "u" 'undo)
@@ -174,7 +174,7 @@
 ;; H
 (define-key cjh-keymap "I" 'cjh-insert-beginning-of-line)
 (define-key cjh-keymap "J" 'cjh-delete-indentation)
-;; K
+(define-key cjh-keymap "K" 'kmacro-end-or-call-macro)
 ;; L
 (define-key cjh-keymap "M" 'move-to-window-line-top-bottom)
 (define-key cjh-keymap "N" 'cjh-isearch-prev)
@@ -235,6 +235,8 @@
 (define-key cjh-keymap (kbd "C-u") 'cjh-scroll-down-half)
 ;; C-v
 (define-key cjh-keymap (kbd "C-;") 'cjh-insert-semicolon-at-eol)
+
+(define-key cjh-keymap (kbd "M-K") 'apply-macro-to-region-lines)
 
 ;; Global keymaps
 (global-set-key (kbd "C-;") 'cjh-insert-semicolon-at-eol)
@@ -298,6 +300,8 @@
 (define-key cjh-keymap " wh" 'other-window)
 (define-key cjh-keymap " wl" 'other-window)
 (define-key cjh-keymap " w/" 'split-window-right)
+;; " wL"
+;; " wH"
 ;; " x"
 ;; " y"
 ;; " z"
@@ -583,17 +587,30 @@ the previous one."
   (interactive)
   (isearch-backward))
 
-;; TODO(chogan): Broken
 (defun cjh-isearch-next ()
   (interactive)
-  (if cjh-isearch-state
-      (isearch-repeat-forward)))
+  (if cjh-last-isearch-string
+      (progn
+        (font-lock-add-keywords nil `((,cjh-last-isearch-string 0 isearch-face t)))
+        (font-lock-fontify-buffer)
+        (if (eq nil (search-forward cjh-last-isearch-string nil t))
+            (progn
+              (goto-char (point-min))
+              (search-forward cjh-last-isearch-string nil t))))))
 
-;; TODO(chogan): Broken
 (defun cjh-isearch-prev ()
   (interactive)
-  (if cjh-isearch-state
-      (isearch-repeat-backward)))
+  (if cjh-last-isearch-string
+      (if (eq nil (search-backward cjh-last-isearch-string nil t))
+          (progn
+            (goto-char (point-max))
+            (search-backward cjh-last-isearch-string nil t)))))
+
+;; TODO(chogan): This messes up when 'q' is part of the search string
+(defun cjh-quit-isearch-highlight ()
+  (interactive)
+  (font-lock-remove-keywords nil `((,cjh-last-isearch-string 0 isearch-face t)))
+  (font-lock-fontify-buffer))
 
 (defun cjh-delete-indentation ()
   (interactive)
@@ -857,6 +874,10 @@ the line at point and insert the line there."
 (defun cjh-copy-word ()
   (interactive))
 
+(defun cjh-end-isearch ()
+  (let ((last-searched-string (if search-ring (car search-ring) nil)))
+    (setq cjh-last-isearch-string last-searched-string)))
+
 (defun enable-cjh-mode ()
   (cjh-mode 1))
 
@@ -873,7 +894,7 @@ the line at point and insert the line there."
 (add-hook 'c-mode-common-hook (lambda () (modify-syntax-entry ?_ "w")))
 (add-hook 'help-mode-hook 'cjh-set-help-cursor)
 (add-hook 'help-mode-hook (lambda () (local-set-key "q" 'cjh-quit-help)))
-;; (add-hook 'isearch-mode-end-hook (lambda () (setq cjh-isearch-state nil)))
+(add-hook 'isearch-mode-end-hook 'cjh-end-isearch)
 (add-hook 'prog-mode-hook 'enable-cjh-mode)
 (add-hook 'org-mode-hook 'cjh-init-org)
 (add-hook 'messages-buffer-mode-hook 'enable-cjh-mode)
