@@ -37,9 +37,11 @@
 (setq cjh-scroll-margin 5)
 (setq scroll-margin cjh-scroll-margin)
 (setq pop-up-windows nil)
-;; Don't create "backup~" files
-(setq make-backup-files nil)
+;; Get backup files and auto saves out of the way
+(setq backup-directory-alist `((".*" . ,temporary-file-directory)))
+(setq auto-save-file-name-transforms `((".*" ,temporary-file-directory)))
 ;; Select window where help appears
+;; TODO(chogan): Disable this once help-mode has some sane bindings
 (setq help-window-select t)
 
 ;; Save layout and buffers between sessions
@@ -58,6 +60,8 @@
 (show-paren-mode 1)
 ;; Highlight matching paren when point is on closing paren
 (setq show-paren-when-point-inside-paren t)
+;; Wrap long lines
+(visual-line-mode 1)
 
 (defvar cjh-toggle-tab nil
   "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
@@ -75,8 +79,20 @@
 (defvar cjh-keymap (make-sparse-keymap)
   "Keymap for cjh-mode")
 
+(defvar cjh-org-keymap
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map cjh-keymap)
+    map)
+  "Keymap for org-mode. Uses cjh-mode but adds extra org functions.")
+
 (defvar cjh-last-isearch-string nil
   "The last string searched for with '/' (isearch-forward) or '?' (isearch-backward)")
+
+;; (defvar cjh-saved-layouts nil
+;;   "An alist of all saved window configurations by number.")
+
+;; (defvar cjh-current-layout nil
+;;   "The currently active layout, including window config, and their buffers and points.")
 
 (defun cjh-insert-state ()
   (interactive)
@@ -282,7 +298,10 @@
 ;; " k"
 (setq list-directory-verbose-switches "-la")
 ;; (define-key cjh-keymap " ll" 'cjh-list-directory)
-(define-key cjh-keymap " ls" 'list-directory)
+;; (define-key cjh-keymap " ls" 'list-directory)
+;; TODO(chogan): These layouts don't persist across restarts
+(define-key cjh-keymap " ls" 'window-configuration-to-register)
+(define-key cjh-keymap " ll" 'jump-to-register)
 ;; " m"
 ;; " n"
 ;; " o"
@@ -811,19 +830,21 @@ the line at point and insert the line there."
   (call-interactively 'set-mark-command))
 
 (defun cjh-define-org-bindings ()
-  (define-key cjh-keymap " ma" 'org-agenda)
-  (define-key cjh-keymap " ms" 'org-schedule)
-  (define-key cjh-keymap " mr" 'org-clock-report)
-  (define-key cjh-keymap " mI" 'org-clock-in)
-  (define-key cjh-keymap " mO" 'org-clock-out)
-  (define-key cjh-keymap " mb" 'org-insert-structure-template)
-  (define-key cjh-keymap "t" 'org-todo)
-  (define-key cjh-keymap (kbd "M-h") 'org-do-promote)
-  (define-key cjh-keymap (kbd "M-j") 'org-move-subtree-down)
-  (define-key cjh-keymap (kbd "M-k") 'org-move-subtree-up)
-  (define-key cjh-keymap (kbd "M-l") 'org-do-demote)
-  (define-key cjh-keymap (kbd "M-H") 'org-promote-subtree)
-  (define-key cjh-keymap (kbd "M-L") 'org-demote-subtree)
+  ;; TODO(chogan): Open in window instead of new frame.
+  (define-key cjh-org-keymap " ma" 'org-agenda)
+  (define-key cjh-org-keymap " ms" 'org-schedule)
+  (define-key cjh-org-keymap " mr" 'org-clock-report)
+  (define-key cjh-org-keymap " mI" 'org-clock-in)
+  (define-key cjh-org-keymap " mO" 'org-clock-out)
+  (define-key cjh-org-keymap " mb" 'org-insert-structure-template)
+  (define-key cjh-org-keymap "t" 'org-todo)
+  (define-key cjh-org-keymap (kbd "M-h") 'org-do-promote)
+  (define-key cjh-org-keymap (kbd "M-j") 'org-move-subtree-down)
+  (define-key cjh-org-keymap (kbd "M-k") 'org-move-subtree-up)
+  (define-key cjh-org-keymap (kbd "M-l") 'org-do-demote)
+  (define-key cjh-org-keymap (kbd "M-H") 'org-promote-subtree)
+  (define-key cjh-org-keymap (kbd "M-L") 'org-demote-subtree)
+  (define-key cjh-org-keymap (kbd "TAB") 'org-cycle)
   ;; 'org-next-visible-heading
   ;; 'org-previous-visible-heading
   ;; 'org-forward-same-level
@@ -853,7 +874,8 @@ the line at point and insert the line there."
 
 (defun cjh-init-org ()
   (enable-cjh-mode)
-  (cjh-define-org-bindings))
+  (cjh-define-org-bindings)
+  (setq-local overriding-local-map cjh-org-keymap))
 
 (defface cjh-todo-face '((t :bold t :foreground "#cc9393"))
   "Face for highlighting TODO, NOTE, etc.")
