@@ -61,7 +61,9 @@
 ;; Highlight matching paren when point is on closing paren
 (setq show-paren-when-point-inside-paren t)
 ;; Wrap long lines
-(visual-line-mode 1)
+(global-visual-line-mode 1)
+;; Show line wrap indicators in fringe
+(setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
 
 (defvar cjh-toggle-tab nil
   "Used by cjh-toggle-prev-buffer to toggle between next and previous buffer.")
@@ -262,8 +264,8 @@
 ;;; SPC leader
 (define-key cjh-keymap "  " 'execute-extended-command)
 ;; " a"
-(define-key cjh-keymap " bb" 'switch-to-buffer)
-(define-key cjh-keymap " bB" 'switch-to-buffer-other-window)
+(define-key cjh-keymap " bb" 'ido-switch-buffer)
+(define-key cjh-keymap " bB" 'ido-switch-buffer-other-window)
 (define-key cjh-keymap " bd" 'kill-buffer)
 (define-key cjh-keymap " bD" 'clean-buffer-list)
 (define-key cjh-keymap " bp" 'previous-buffer)
@@ -877,7 +879,7 @@ the line at point and insert the line there."
   (cjh-define-org-bindings)
   (setq-local overriding-local-map cjh-org-keymap))
 
-(defface cjh-todo-face '((t :bold t :foreground "#cc9393"))
+(defface cjh-todo-face '((t :bold t :foreground "Pink")) ; "#cc9393"))
   "Face for highlighting TODO, NOTE, etc.")
 
 (defvar cjh-todo 'cjh-todo-face)
@@ -923,6 +925,7 @@ the line at point and insert the line there."
 (add-to-list 'custom-theme-load-path "~/.emacs.d/cjh")
 (load-theme 'cjh-theme t)
 (add-hook 'prog-mode-hook 'cjh-hl-todo)
+(add-hook 'text-mode-hook 'cjh-hl-todo)
 
 ;; Without this, unicode characters in view in a buffer greatly
 ;; decreases performance on Windows

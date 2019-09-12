@@ -6,14 +6,13 @@
 ** TODO project search
 ** TODO Completion
 ** TODO cjh-help-mode
+** TODO cjh-org-mode
 
 * Bugs
 ** TODO visual line selection mode doesn't work quite right
-** TODO org-mode keybinding for 't' is sometimes not active
 ** TODO M-l, M-h heading adjustments in org insert mode
 ** TODO Sometimes get stuck in minibuffer completion
 ** TODO Pasting multiple newlines in a row results in gaps
 ** TODO org-mode doesn't highlight whitespace
-** TODO org-mode keybindings sometimes overwritten
-
+** TODO org-mode keybindings sometimes overwritten. Need cjh-minor-mode keymap
 
