@@ -22,14 +22,13 @@
 
 ;;; Defaults
 ;; Highlight trailing whitespace
-(setq show-trailing-whitespace t)
-(setq tab-width 4)
+(setq-default show-trailing-whitespace t)
+(setq-default tab-width 4)
 ;; Indent with spaces
-(setq indent-tabs-mode nil)
+(setq-default indent-tabs-mode nil)
 ;; Make 'kill-line also delete the \n character
 (setq kill-whole-line t)
-(setq c-basic-offset 4)
-(setq tab-width 4)
+(setq-default c-basic-offset 4)
 
 ;; Prompt for compile command when calling `compile`
 (setq compilation-read-command t)
@@ -107,7 +106,9 @@
   (interactive)
   (setq-local cursor-type 'box)
   (cjh-normal-cursor-color)
-  (setq-local overriding-local-map cjh-keymap)
+  (if (eq major-mode 'org-mode)
+      (setq-local overriding-local-map cjh-org-keymap)
+    (setq-local overriding-local-map cjh-keymap))
   (setq-local cjh-command-state t))
 
 (define-minor-mode cjh-mode nil nil nil nil
@@ -266,7 +267,7 @@
 ;; " a"
 (define-key cjh-keymap " bb" 'ido-switch-buffer)
 (define-key cjh-keymap " bB" 'ido-switch-buffer-other-window)
-(define-key cjh-keymap " bd" 'kill-buffer)
+(define-key cjh-keymap " bd" 'kill-this-buffer)
 (define-key cjh-keymap " bD" 'clean-buffer-list)
 (define-key cjh-keymap " bp" 'previous-buffer)
 (define-key cjh-keymap " bn" 'next-buffer)
@@ -841,18 +842,20 @@ the line at point and insert the line there."
   (define-key cjh-org-keymap " mb" 'org-insert-structure-template)
   (define-key cjh-org-keymap "t" 'org-todo)
   (define-key cjh-org-keymap (kbd "M-h") 'org-do-promote)
+  (define-key cjh-org-keymap (kbd "M-l") 'org-do-demote)
+  (global-set-key (kbd "M-l") 'org-do-demote)
+  (global-set-key (kbd "M-h") 'org-do-promote)
   (define-key cjh-org-keymap (kbd "M-j") 'org-move-subtree-down)
   (define-key cjh-org-keymap (kbd "M-k") 'org-move-subtree-up)
-  (define-key cjh-org-keymap (kbd "M-l") 'org-do-demote)
   (define-key cjh-org-keymap (kbd "M-H") 'org-promote-subtree)
   (define-key cjh-org-keymap (kbd "M-L") 'org-demote-subtree)
   (define-key cjh-org-keymap (kbd "TAB") 'org-cycle)
-  ;; 'org-next-visible-heading
-  ;; 'org-previous-visible-heading
-  ;; 'org-forward-same-level
-  ;; 'org-backward-same-level
-  ;; 'outline-up-heading
-  ;; default clock table settings :scope file :depth 6
+  ;; NOTE(chogan): In newer orgs, this is 'org-next-visible and 'org-previous-visible
+  (define-key cjh-org-keymap (kbd "M-n") 'outline-next-visible-heading)
+  (define-key cjh-org-keymap (kbd "M-p") 'outline-previous-visible-heading)
+  (define-key cjh-org-keymap "L" 'org-forward-heading-same-level)
+  (define-key cjh-org-keymap "H" 'org-backward-heading-same-level)
+  (define-key cjh-org-keymap "P" 'outline-up-heading)
   ;; org-capture?
   )
 
@@ -941,10 +944,17 @@ the line at point and insert the line there."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(c-default-style (quote ((c-mode . "linux") (c++-mode . "linux")))))
+ '(c-default-style (quote ((c-mode . "linux") (c++-mode . "linux"))))
+ '(org-clocktable-defaults
+   (quote
+    (:maxlevel 6 :lang "en" :scope file :block nil :wstart
+    1 :mstart 1 :tstart nil :tend nil :step nil :stepskip0
+    nil :fileskip0 nil :tags nil :emphasize nil :link nil :narrow
+    40! :indent t :formula nil :timestamp nil :level
+    nil :tcolumns nil :formatter nil))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
-)
+ )
