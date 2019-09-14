@@ -4,10 +4,20 @@
 ** TODO Layouts
 ** TODO '.' for repeating last command
 ** TODO project search
+   - swiper
 ** TODO Completion
+   - auto-complete
+   - company
+   - dabbrev
+   - hippie-expand
 ** TODO cjh-help-mode
 ** TODO TAB to move past ")]}
 ** TODO Better option for minibuffer completion
+   - helm
+   - ivy
+** TODO Tagging
+   - rtags
+   - ggtags
 
 * Bugs
 ** TODO visual line selection mode doesn't work quite right

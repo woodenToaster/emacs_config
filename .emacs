@@ -20,6 +20,12 @@
 ;; forward-to-word, backward-to-word for vi-like w, e, zap-up-to-char for dt
 (require 'misc)
 
+(add-to-list 'load-path "~/.emacs.d/cjh")
+;; (require 'org-bullets)
+;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+(require 'ace-jump-mode)
+(add-hook 'ace-jump-mode-end-hook 'cjh-normal-state)
+
 ;;; Defaults
 ;; Highlight trailing whitespace
 (setq-default show-trailing-whitespace t)
@@ -242,22 +248,21 @@
 ;; >
 ;; TODO(chogan): Improve semantics of this
 (define-key cjh-keymap "." 'repeat)
-;; TODO(chogan): Keep searched option after <RET> so I can n and N
-;; through the results
 (define-key cjh-keymap "/" 'cjh-isearch-forward)
 (define-key cjh-keymap "?" 'cjh-isearch-backward)
 (define-key cjh-keymap "0" 'beginning-of-line)
+(define-key cjh-keymap (kbd "TAB") 'indent-for-tab-command)
 
-;; C-n 'cjh-multi-cursor-add
 (define-key cjh-keymap (kbd "C-d") 'cjh-scroll-up-half)
+;; C-n 'cjh-multi-cursor-add
 (define-key cjh-keymap (kbd "C-o") 'pop-to-mark-command)
 (define-key cjh-keymap (kbd "C-u") 'cjh-scroll-down-half)
 ;; C-v
 (define-key cjh-keymap (kbd "C-;") 'cjh-insert-semicolon-at-eol)
-
 (define-key cjh-keymap (kbd "M-K") 'apply-macro-to-region-lines)
 
 ;; Global keymaps
+(global-set-key (kbd "TAB") 'dabbrev-expand)
 (global-set-key (kbd "C-;") 'cjh-insert-semicolon-at-eol)
 (global-set-key (kbd "M-h") 'backward-char)
 (global-set-key (kbd "M-l") 'forward-char)
@@ -297,11 +302,11 @@
 (define-key cjh-keymap " hP" 'describe-package)
 (define-key cjh-keymap " hS" 'info-lookup-symbol)
 ;; " i"
-;; " j"
+(define-key cjh-keymap " jw" 'ace-jump-word-mode)
+(define-key cjh-keymap " jc" 'ace-jump-char-mode)
+(define-key cjh-keymap " jl" 'ace-jump-line-mode)
 ;; " k"
-(setq list-directory-verbose-switches "-la")
-;; (define-key cjh-keymap " ll" 'cjh-list-directory)
-;; (define-key cjh-keymap " ls" 'list-directory)
+
 ;; TODO(chogan): These layouts don't persist across restarts
 (define-key cjh-keymap " ls" 'window-configuration-to-register)
 (define-key cjh-keymap " ll" 'jump-to-register)
@@ -935,9 +940,7 @@ the line at point and insert the line there."
 (if (string-equal system-type "windows-nt")
     (setq inhibit-compacting-font-caches t))
 
-;; (add-to-list 'load-path "~/.emacs.d/cjh")
-;; (require 'org-bullets)
-;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -947,11 +950,8 @@ the line at point and insert the line there."
  '(c-default-style (quote ((c-mode . "linux") (c++-mode . "linux"))))
  '(org-clocktable-defaults
    (quote
-    (:maxlevel 6 :lang "en" :scope file :block nil :wstart
-    1 :mstart 1 :tstart nil :tend nil :step nil :stepskip0
-    nil :fileskip0 nil :tags nil :emphasize nil :link nil :narrow
-    40! :indent t :formula nil :timestamp nil :level
-    nil :tcolumns nil :formatter nil))))
+    (:maxlevel 6 :lang "en" :scope file :block nil :wstart 1 :mstart 1 :tstart nil :tend nil :step nil :stepskip0 nil :fileskip0 nil :tags nil :emphasize nil :link nil :narrow 40! :indent t :formula nil :timestamp nil :level nil :tcolumns nil :formatter nil)))
+ '(package-selected-packages (quote (counsel))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
