@@ -31,8 +31,10 @@ There are two things you can do about this warning:
   (require 'ace-jump-mode)
   (add-hook 'ace-jump-mode-end-hook 'cjh-normal-state))
 
-;; Ues ivy when t, ido when nil
+;; Uses ivy when t, ido when nil
 (setq cjh-use-ivy t)
+;; Uses swiper when t, isearch when nil
+(setq cjh-use-swiper nil)
 
 (if cjh-use-ivy
     (progn
@@ -112,6 +114,28 @@ There are two things you can do about this warning:
 (defvar cjh-last-isearch-string nil
   "The last string searched for with '/' (isearch-forward) or '?' (isearch-backward)")
 
+;; (defvar cjh-repeat-info nil
+;;   "Information accumulated for current command to be repeated")
+
+;; (defvar cjh-recording-repeat '()
+;;   "t when recording command information to repeat")
+
+;; (defun cjh-start-recording-repeat ()
+;;   (setq cjh-recording-repeat t)
+;;   (setq cjh-repeat-info nil)
+;;   (add-hook 'pre-command-hook 'cjh-repeat-pre-hook))
+
+;; (defun cjh-stop-recording-repeat ()
+;;   (setq cjh-recording-repeat nil)
+;;   (remove-hook 'pre-command-hook 'cjh-repeat-pre-hook))
+
+;; (defun cjh-repeat-pre-hook ()
+;;   (append `(,this-command) 'cjh-repeat-info))
+
+;; (defun cjh-repeat-last-command ()
+;;   (interactive)
+;;   (message "%s" cjh-repeat-info))
+
 ;; (defvar cjh-saved-layouts nil
 ;;   "An alist of all saved window configurations by number.")
 
@@ -123,7 +147,9 @@ There are two things you can do about this warning:
   (setq-local cursor-type 'bar)
   (cjh-insert-cursor-color)
   (setq-local overriding-local-map nil)
-  (setq-local cjh-command-state nil))
+  (setq-local cjh-command-state nil)
+  ;; (cjh-start-recording-repeat)
+  )
 
 (defun cjh-normal-state ()
   (interactive)
@@ -132,7 +158,9 @@ There are two things you can do about this warning:
   (if (eq major-mode 'org-mode)
       (setq-local overriding-local-map cjh-org-keymap)
     (setq-local overriding-local-map cjh-keymap))
-  (setq-local cjh-command-state t))
+  (setq-local cjh-command-state t)
+  ;; (cjh-stop-recording-repeat)
+  )
 
 (define-minor-mode cjh-mode nil nil nil nil
   (unless (or
@@ -264,10 +292,12 @@ There are two things you can do about this warning:
 ;; <
 ;; >
 ;; TODO(chogan): Improve semantics of this
-(define-key cjh-keymap "." 'repeat)
-(if cjh-use-ivy
+(define-key cjh-keymap "." 'cjh-repeat-last-command)
+
+(if cjh-use-swiper
     (define-key cjh-keymap "/" 'swiper)
   (define-key cjh-keymap "/" 'cjh-isearch-forward))
+
 (define-key cjh-keymap "?" 'cjh-isearch-backward)
 (define-key cjh-keymap "0" 'beginning-of-line)
 (define-key cjh-keymap (kbd "TAB") 'indent-for-tab-command)
@@ -331,7 +361,7 @@ There are two things you can do about this warning:
 (define-key cjh-keymap " hP" 'describe-package)
 (define-key cjh-keymap " hS" 'info-lookup-symbol)
 ;; " i"
-(if cjh-use-ace-jump-mode
+(if cjh-use-ace-jump
     (progn
       (define-key cjh-keymap " jw" 'ace-jump-word-mode)
       (define-key cjh-keymap " jc" 'ace-jump-char-mode)
@@ -777,7 +807,8 @@ the line at point and insert the line there."
         (progn
           (next-line)
           (beginning-of-line)
-          (yank))
+          (yank)
+          (previous-line))
       (yank))))
 
 (defun cjh-delete (beg end)
@@ -970,12 +1001,14 @@ the line at point and insert the line there."
 (add-hook 'prog-mode-hook 'cjh-hl-todo)
 (add-hook 'text-mode-hook 'cjh-hl-todo)
 
+(when cjh-use-ivy
+  (advice-add 'swiper--action :after 'cjh-end-isearch)
+  (advice-add 'swiper-isearch-action :after 'cjh-end-isearch))
+
 ;; Without this, unicode characters in view in a buffer greatly
 ;; decreases performance on Windows
 (if (string-equal system-type "windows-nt")
     (setq inhibit-compacting-font-caches t))
-
-
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -983,9 +1016,6 @@ the line at point and insert the line there."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(c-default-style (quote ((c-mode . "linux") (c++-mode . "linux"))))
- '(org-clocktable-defaults
-   (quote
-    (:maxlevel 6 :lang "en" :scope file :block nil :wstart 1 :mstart 1 :tstart nil :tend nil :step nil :stepskip0 nil :fileskip0 nil :tags nil :emphasize nil :link nil :narrow 40! :indent t :formula nil :timestamp nil :level nil :tcolumns nil :formatter nil)))
  '(package-selected-packages (quote (avy counsel))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

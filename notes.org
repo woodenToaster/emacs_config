@@ -15,4 +15,3 @@
 
 * Bugs
 ** TODO visual line selection mode doesn't work quite right
-** TODO Pasting multiple newlines in a row results in gaps
