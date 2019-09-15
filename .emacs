@@ -1,20 +1,20 @@
-;; (require 'package)
-;; (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-;;                     (not (gnutls-available-p))))
-;;        (proto (if no-ssl "http" "https")))
-;;   (when no-ssl
-;;     (warn "\
-;; Your version of Emacs does not support SSL connections,
-;; which is unsafe because it allows man-in-the-middle attacks.
-;; There are two things you can do about this warning:
-;; 1. Install an Emacs version that does support SSL and be safe.
-;; 2. Remove this warning from your init file so you won't see it again."))
-;;   ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-;;   ;; (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-;;   (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
-;;   (when (< emacs-major-version 24)
-;;     ;; For important compatibility libraries like cl-lib
-;;     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
+(require 'package)
+(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+                    (not (gnutls-available-p))))
+       (proto (if no-ssl "http" "https")))
+  (when no-ssl
+    (warn "\
+Your version of Emacs does not support SSL connections,
+which is unsafe because it allows man-in-the-middle attacks.
+There are two things you can do about this warning:
+1. Install an Emacs version that does support SSL and be safe.
+2. Remove this warning from your init file so you won't see it again."))
+  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+  ;; (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+  (add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+  (when (< emacs-major-version 24)
+    ;; For important compatibility libraries like cl-lib
+    (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
 ;; forward-to-word, backward-to-word for vi-like w, e, zap-up-to-char for dt
@@ -23,8 +23,27 @@
 (add-to-list 'load-path "~/.emacs.d/cjh")
 ;; (require 'org-bullets)
 ;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-(require 'ace-jump-mode)
-(add-hook 'ace-jump-mode-end-hook 'cjh-normal-state)
+
+;; Uses ace-jump-mode when t, avy when nil
+(setq cjh-use-ace-jump nil)
+
+(when cjh-use-ace-jump
+  (require 'ace-jump-mode)
+  (add-hook 'ace-jump-mode-end-hook 'cjh-normal-state))
+
+;; Ues ivy when t, ido when nil
+(setq cjh-use-ivy t)
+
+(if cjh-use-ivy
+    (progn
+      (ivy-mode 1)
+      (setq ivy-use-virtual-buffers t)
+      (setq ivy-count-format "(%d/%d) ")
+      (setq ivy-height 20))
+  (progn
+    (ido-mode 1)
+    (setq ido-everywhere t)
+    (setq ido-enable-flex-matching t)))
 
 ;;; Defaults
 ;; Highlight trailing whitespace
@@ -58,9 +77,7 @@
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
-(ido-mode 1)
-(setq ido-everywhere t)
-(setq ido-enable-flex-matching t)
+
 ;; Highlight matching paren
 (show-paren-mode 1)
 ;; Highlight matching paren when point is on closing paren
@@ -248,7 +265,9 @@
 ;; >
 ;; TODO(chogan): Improve semantics of this
 (define-key cjh-keymap "." 'repeat)
-(define-key cjh-keymap "/" 'cjh-isearch-forward)
+(if cjh-use-ivy
+    (define-key cjh-keymap "/" 'swiper)
+  (define-key cjh-keymap "/" 'cjh-isearch-forward))
 (define-key cjh-keymap "?" 'cjh-isearch-backward)
 (define-key cjh-keymap "0" 'beginning-of-line)
 (define-key cjh-keymap (kbd "TAB") 'indent-for-tab-command)
@@ -270,8 +289,13 @@
 ;;; SPC leader
 (define-key cjh-keymap "  " 'execute-extended-command)
 ;; " a"
-(define-key cjh-keymap " bb" 'ido-switch-buffer)
-(define-key cjh-keymap " bB" 'ido-switch-buffer-other-window)
+(if cjh-use-ivy
+    (progn
+      (define-key cjh-keymap " bb" 'counsel-switch-buffer)
+      (define-key cjh-keymap " bB" 'counsel-switch-buffer-other-window))
+  (progn
+    (define-key cjh-keymap " bb" 'ido-switch-buffer)
+    (define-key cjh-keymap " bB" 'ido-switch-buffer-other-window)))
 (define-key cjh-keymap " bd" 'kill-this-buffer)
 (define-key cjh-keymap " bD" 'clean-buffer-list)
 (define-key cjh-keymap " bp" 'previous-buffer)
@@ -279,9 +303,14 @@
 ;; " c"
 (define-key cjh-keymap " d" 'dired)
 (define-key cjh-keymap " en" 'compilation-next-error-function)
-(define-key cjh-keymap " ff" 'ido-find-file)
-(define-key cjh-keymap " fF" 'ido-find-file-other-window)
-(define-key cjh-keymap " fr" 'ido-find-file-read-only)
+(if cjh-use-ivy
+    (progn
+      (define-key cjh-keymap " ff" 'counsel-find-file)
+      (define-key cjh-keymap " fF" 'counsel-find-file-other-window))
+  (progn
+    (define-key cjh-keymap " ff" 'ido-find-file)
+    (define-key cjh-keymap " fF" 'ido-find-file-other-window)
+    (define-key cjh-keymap " fr" 'ido-find-file-read-only)))
 ;; (define-key cjh-keymap " fR" 'cjh-rename-file)
 (define-key cjh-keymap " gg" 'goto-line)
 (define-key cjh-keymap " ha" 'apropos-command)
@@ -302,9 +331,15 @@
 (define-key cjh-keymap " hP" 'describe-package)
 (define-key cjh-keymap " hS" 'info-lookup-symbol)
 ;; " i"
-(define-key cjh-keymap " jw" 'ace-jump-word-mode)
-(define-key cjh-keymap " jc" 'ace-jump-char-mode)
-(define-key cjh-keymap " jl" 'ace-jump-line-mode)
+(if cjh-use-ace-jump-mode
+    (progn
+      (define-key cjh-keymap " jw" 'ace-jump-word-mode)
+      (define-key cjh-keymap " jc" 'ace-jump-char-mode)
+      (define-key cjh-keymap " jl" 'ace-jump-line-mode))
+  (progn
+    (define-key cjh-keymap " jw" 'avy-goto-word-1)
+    (define-key cjh-keymap " jc" 'avy-goto-char)
+    (define-key cjh-keymap " jl" 'avy-goto-line)))
 ;; " k"
 
 ;; TODO(chogan): These layouts don't persist across restarts
@@ -951,7 +986,7 @@ the line at point and insert the line there."
  '(org-clocktable-defaults
    (quote
     (:maxlevel 6 :lang "en" :scope file :block nil :wstart 1 :mstart 1 :tstart nil :tend nil :step nil :stepskip0 nil :fileskip0 nil :tags nil :emphasize nil :link nil :narrow 40! :indent t :formula nil :timestamp nil :level nil :tcolumns nil :formatter nil)))
- '(package-selected-packages (quote (counsel))))
+ '(package-selected-packages (quote (avy counsel))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
